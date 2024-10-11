@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { reqOTP, verifyotp, SignInWithGoogle } from './actions'
+import { reqOTP, verifyotp, signInWithGoogle } from './actions'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -29,7 +29,9 @@ export default function LoginPage() {
                 <button formAction={handleVerifyOTP}>Verify OTP</button>
             </form>
 
-            <button onClick={SignInWithGoogle}>Sign in With Google</button>
+            <button onClick={() => {
+                signInWithGoogle();
+            }}>Sign in With Google</button>
         </>
     )
 }

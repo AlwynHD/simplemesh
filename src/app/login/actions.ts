@@ -45,11 +45,11 @@ export async function verifyotp(formData: FormData) {
         redirect('/error')
     }
 
-    revalidatePath('/private', 'layout')
-    redirect('/private')
+    revalidatePath('/dashboard', 'layout')
+    redirect('/dashboard')
 }
 
-export async function SignInWithGoogle() {
+export async function signInWithGoogle() {
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -61,11 +61,11 @@ export async function SignInWithGoogle() {
         },
       },
     });
-  
+
     if (error) {
       console.log(error);
       redirect("/error");
     }
-  
+    console.log(data.url)
     redirect(data.url);
   }

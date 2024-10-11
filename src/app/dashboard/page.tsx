@@ -1,8 +1,9 @@
+import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
+export default async function DashboardPage() {
 
-export default async function PrivatePage() {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.getUser()
@@ -11,6 +12,9 @@ export default async function PrivatePage() {
     console.log(data)
     redirect('/login')
   }
-
-  return <p>Hello {data.user.email}</p>
+  return (
+    <ContentLayout title="Dashboard">
+      <div>Welcome {data.user.email}</div>
+    </ContentLayout>
+  );
 }
