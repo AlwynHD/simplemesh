@@ -1,37 +1,15 @@
 "use client"
-import { useState } from 'react'
-import { reqOTP, verifyotp, signInWithGoogle } from './actions'
+import { LoginWithLogo } from '@/components/login-components/login-with-logo'
+
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('')
 
-    const handleReqOTP = async (formData: FormData) => {
-        const emailValue = formData.get('email') as string
-        setEmail(emailValue)
-        await reqOTP(formData)
-    }
-
-    const handleVerifyOTP = async (formData: FormData) => {
-        formData.append('email', email)
-        await verifyotp(formData)
-    }
 
     return (
-        <>
-            <form>
-                <label htmlFor="email">Email:</label>
-                <input id="email" name="email" type="email" required />
-                <button formAction={handleReqOTP}>Send OTP</button>
-            </form>
-            <form>
-                <label htmlFor="otp">OTP:</label>
-                <input id="otp" name="otp" />
-                <button formAction={handleVerifyOTP}>Verify OTP</button>
-            </form>
-
-            <button onClick={() => {
-                signInWithGoogle();
-            }}>Sign in With Google</button>
-        </>
+        <div className='flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8'>
+            <div className='w-full max-w-[350px] sm:max-w-md'>
+                <LoginWithLogo />
+            </div>
+        </div>
     )
 }
