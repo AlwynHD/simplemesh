@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   return (
     <ContentLayout title="Dashboard">
       <div>Welcome {data.user.email}</div>
-        <Settings />
+        {/* <Settings /> */}
       {/* <button
         onClick={openModal}
         className='absolute top-4 left-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded'

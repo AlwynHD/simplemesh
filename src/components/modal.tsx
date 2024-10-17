@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface CustomModalProps {
   isOpen: boolean;
@@ -8,6 +9,11 @@ interface CustomModalProps {
 
 const Modal: React.FC<CustomModalProps> = ({ isOpen, onClose, children }) => {
   const [isRendered, setIsRendered] = useState(false);
+  const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setModalRoot(document.body);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -18,9 +24,9 @@ const Modal: React.FC<CustomModalProps> = ({ isOpen, onClose, children }) => {
     }
   }, [isOpen]);
 
-  if (!isRendered) return null;
+  if (!isRendered || !modalRoot) return null;
 
-  return (
+  const modalContent = (
     <div 
       className={`fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none transition-all duration-300 ease-in-out ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -48,6 +54,8 @@ const Modal: React.FC<CustomModalProps> = ({ isOpen, onClose, children }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, modalRoot);
 };
 
 export default Modal;
