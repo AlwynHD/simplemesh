@@ -75,6 +75,27 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  :root {
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 28 96.4% 67.5%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: -10 30% 15%;
+    --sidebar-accent-foreground: 28 5% 90%;
+    --sidebar-border: 28 30% 18%;
+    --sidebar-ring: 28 96.4% 67.5%;
+  }
+  
+  .dark {
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 28 96.4% 67.5%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: -10 30% 15%;
+    --sidebar-accent-foreground: 28 5% 90%;
+    --sidebar-border: 28 30% 18%;
+    --sidebar-ring: 28 96.4% 67.5%;
+  }
 }
 
 
