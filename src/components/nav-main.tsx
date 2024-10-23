@@ -1,5 +1,7 @@
 "use client"
 
+import { createClient } from "@/utils/supabase/client"
+
 import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import {
@@ -18,7 +20,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export function NavMain({
+export async function NavMain({
   items,
 }: {
   items: {
@@ -32,6 +34,7 @@ export function NavMain({
     }[]
   }[]
 }) {
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>General</SidebarGroupLabel>

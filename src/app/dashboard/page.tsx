@@ -26,6 +26,26 @@ export default async function Page() {
     console.log(data)
     redirect('/login')
   }
+
+
+  const { data: userData, error: userError } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', data.user.id)
+    .single()
+
+  if (userError) {
+    console.log(userError)
+    // Handle error as needed
+  }
+
+  const user = {
+    name: userData?.full_name || data.user?.email?.split('@')[0],
+    email: data.user.email,
+    avatar: userData?.avatar_url || '/default-avatar.png',
+  }
+  console.log(user)
+
   return (
     <SidebarProvider>
       <AppSidebar />
