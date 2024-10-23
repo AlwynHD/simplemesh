@@ -20,7 +20,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export async function NavMain({
+export  function NavMain({
   items,
 }: {
   items: {
