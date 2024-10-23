@@ -26,6 +26,12 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 // This is sample data.
+interface User {
+  name: string;
+  email: string;
+  avatar: string;
+}
+
 const data = {
   user: {
     name: "shadcn",
@@ -145,7 +151,10 @@ const data = {
   ],
 }
 
-export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { user: User }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -153,10 +162,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} />  can add more if i need to */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
