@@ -104,7 +104,8 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => signOut()}>
+
+            <DropdownMenuItem onSelect={() => signOut()}>  {/* Signout the User */}
               <LogOut />
               Log out
             </DropdownMenuItem>
