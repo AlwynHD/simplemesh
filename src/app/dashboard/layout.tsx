@@ -68,18 +68,23 @@ export default async function DashboardLayout({
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
                                     <BreadcrumbLink href="#">
-                                        Building Your Application
+                                        Features
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="hidden md:block" />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                                    <BreadcrumbPage>Text to 3D</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
                 </header>
-                {children}
+                <div className="flex flex-1 gap-2 p-2 pt-0">
+                    <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
+                        {children}
+
+                    </div>
+                </div>
             </SidebarInset>
         </SidebarProvider>
     );
