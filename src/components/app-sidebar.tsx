@@ -37,7 +37,7 @@ const data = {
       items: [
         {
           title: "Text To 3D",
-          url: "#",
+          url: "text-3d",
         },
         {
           title: "Image to 3D",
