@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from 'next/navigation'
 
 import {
   BadgeCheck,
@@ -32,9 +33,11 @@ import {
 } from "@/components/ui/sidebar"
 import { signOut } from "@/components/login-components/login-actions"
 import useUserData from "@/hooks/use-userData"
-export function NavUser({}: {}) {
+import Link from "next/link"
+export function NavUser({ }: {}) {
   const { isMobile } = useSidebar()
   const { user, error, isLoading } = useUserData();
+  const router = useRouter()
 
   return (
     <SidebarMenu>
@@ -83,7 +86,7 @@ export function NavUser({}: {}) {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
