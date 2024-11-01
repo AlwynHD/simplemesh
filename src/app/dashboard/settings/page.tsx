@@ -1,9 +1,7 @@
 // app/settings/page.tsx
 'use client'
-import { useState } from 'react'
 import AccountSettings from '@/components/settings-components/account-settings'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from '@radix-ui/react-scroll-area'
 // import BillingSettings from './components/BillingSettings'
 // import SupportSettings from './components/SupportSettings'
 // import ResourceSettings from './components/ResourceSettings'

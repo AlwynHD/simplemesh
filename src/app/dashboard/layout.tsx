@@ -34,31 +34,10 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
-    const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', data.user.id)
-        .single()
-
-    if (userError) {
-        console.log(userError)
-        // Handle error as needed
-    }
-
-    const user = {
-        name: userData?.full_name || data.user?.email?.split('@')[0],
-        email: data.user.email,
-        avatar: userData?.avatar_url || '/default-avatar.png',
-    }
-    console.log(user)
 
     return (
         <SidebarProvider>
-            <AppSidebar user={{
-                name: user.name,
-                email: user.email || '',
-                avatar: user.avatar
-            }} />
+            <AppSidebar />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                     <div className="flex items-center gap-2 px-4">
