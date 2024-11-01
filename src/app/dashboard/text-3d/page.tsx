@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import ModelViewer from "@/components/ModelViewer"
 export default async function Text3D() {
 
   const supabase = createClient()
@@ -36,15 +37,15 @@ export default async function Text3D() {
             <hr className="my-2 border-border" />
 
             <SidebarGroupContent className="p-2 space-y-4">
-                  <div>
-                  <Label htmlFor="prompt">Prompt</Label>
-                  <Textarea
-                    id="prompt"
-                    placeholder="Enter text prompt..."
-                    className="mt-1.5 min-h-[100px] resize-none"
-                    required
-                  />
-                  </div>
+              <div>
+                <Label htmlFor="prompt">Prompt</Label>
+                <Textarea
+                  id="prompt"
+                  placeholder="Enter text prompt..."
+                  className="mt-1.5 min-h-[100px] resize-none"
+                  required
+                />
+              </div>
 
               <div>
                 <Label htmlFor="seed">Seed </Label>
@@ -67,7 +68,8 @@ export default async function Text3D() {
         </SidebarContent>
       </Sidebar>
       <main className="flex-1 bg-muted/50 p-4">
-        
+        <ModelViewer />
+
       </main>
     </div>
   )
