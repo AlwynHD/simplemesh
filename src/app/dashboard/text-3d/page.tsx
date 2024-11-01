@@ -3,7 +3,16 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
-
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+  } from "@/components/ui/sidebar"
 export default async function Text3D() {
 
     const supabase = createClient()
@@ -16,8 +25,33 @@ export default async function Text3D() {
     }
 
     return (
-<div>
-    hello
-</div>
+        <div className="flex h-full ">
+        <Sidebar className="" variant="inset" collapsible="none">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <a href="#">Profile</a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <a href="#">Preferences</a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <main className="flex-1  bg-muted/50 p-4">
+          <div>
+            Hello
+          </div>
+        </main>
+      </div>
     )
 }
