@@ -29,48 +29,54 @@ export default async function Text3D() {
   }
 
   return (
-    <div className="flex h-full">
-      <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xl font-semibold text-primary">Text To 3D</SidebarGroupLabel>
-            <hr className="my-2 border-border" />
+    // <div className="flex h-full">
+    //   <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">
+    //     <SidebarContent>
+    //       <SidebarGroup>
+    //         <SidebarGroupLabel className="text-xl font-semibold text-primary">Text To 3D</SidebarGroupLabel>
+    //         <hr className="my-2 border-border" />
 
-            <SidebarGroupContent className="p-2 space-y-4">
-              <div>
-                <Label htmlFor="prompt">Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  placeholder="Enter text prompt..."
-                  className="mt-1.5 min-h-[100px] resize-none"
-                  required
-                />
-              </div>
+    //         <SidebarGroupContent className="p-2 space-y-4">
+    //           <div>
+    //             <Label htmlFor="prompt">Prompt</Label>
+    //             <Textarea
+    //               id="prompt"
+    //               placeholder="Enter text prompt..."
+    //               className="mt-1.5 min-h-[100px] resize-none"
+    //               required
+    //             />
+    //           </div>
 
-              <div>
-                <Label htmlFor="seed">Seed </Label>
-                <Input
-                  id="seed"
-                  type="number"
-                  placeholder="Enter number..."
-                  className="mt-1.5"
-                  min={1}
-                  required
-                />
-              </div>
+    //           <div>
+    //             <Label htmlFor="seed">Seed </Label>
+    //             <Input
+    //               id="seed"
+    //               type="number"
+    //               placeholder="Enter number..."
+    //               className="mt-1.5"
+    //               min={1}
+    //               required
+    //             />
+    //           </div>
 
-              <Button className="w-full">
-                Generate Model
-              </Button>
-            </SidebarGroupContent>
-          </SidebarGroup>
+    //           <Button className="w-full">
+    //             Generate Model
+    //           </Button>
+    //         </SidebarGroupContent>
+    //       </SidebarGroup>
 
-        </SidebarContent>
-      </Sidebar>
-      <main className="flex-1 bg-muted/50 p-4">
-        <ModelViewer />
+    //     </SidebarContent>
+    //   </Sidebar>
+    //   <main className="flex-1 bg-muted/50 p-4 overflow-hidden"> {/* Add min-h-0 and overflow-auto */}
+    //     <ModelViewer/>
 
-      </main>
-    </div>
+    //   </main>
+    //   {/* <div className="fixed bottom-4 right-4 p-4 bg-background/80 backdrop-blur rounded-lg border border-border shadow-lg">
+    //     <p className="text-sm text-muted-foreground">
+    //       Generate 3D models from text descriptions using AI. Enter a prompt and seed value, then click Generate.
+    //     </p>
+    //   </div> */}
+    // </div>
+    <ModelViewer/>
   )
 }
