@@ -11,7 +11,7 @@ function Model({ url }: { url: string }) {
 
 export default function ModelViewer({ modelUrl }: { modelUrl?: string }) {
   return (
-    <div className="w-full h-full overflow-hidden">
+    <div className="w-full h-full overflow-hidden bg-slate-100">
       <Canvas shadows camera={{ position: [5, 5, 5], fov: 75 }} >
         <Suspense fallback={null}>
           <Stage environment="city" intensity={0.6}>

@@ -37,35 +37,33 @@ export default async function DashboardLayout({
 
     return (
         <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-
-                    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-                        <div className="flex items-center gap-2 px-4">
-                            <SidebarTrigger className="-ml-1" />
-                            <Separator orientation="vertical" className="mr-2 h-4" />
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    <BreadcrumbItem className="hidden md:block">
-                                        <BreadcrumbLink href="#">
-                                            Features
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage>Text to 3D</BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                        </div>
-                    </header>
-                    <div className="flex flex-1">
-                        <div className=" flex-1 rounded-xl bg-muted/50 md:min-h-min">
+            <AppSidebar />
+            <SidebarInset>
+                <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+                    <div className="flex items-center gap-2 px-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className="mr-2 h-4" />
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem className="hidden md:block">
+                                    <BreadcrumbLink href="#">Features</BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator className="hidden md:block" />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>Text to 3D</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
+                </header>
+                <div className="relative flex flex-col h-full w-full">
+                    <div className="absolute inset-0 flex overflow-hidden">
+                        <div className="w-full h-full rounded-xl bg-muted/50 overflow-auto">
                             {children}
-
                         </div>
                     </div>
-                </SidebarInset>
+                </div>
+            </SidebarInset>
         </SidebarProvider>
     );
 }
