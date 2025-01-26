@@ -61,7 +61,7 @@ export function LoginWithLogo() {
         <CardDescription>
           {isOtpSent ? (
             <div className="text-center">
-              We've sent a 6-digit code to {email}
+              We&apos;ve sent a 6-digit code to {email}
             </div>
           ) : "Select an Option Below"}
         </CardDescription>
@@ -98,7 +98,7 @@ export function LoginWithLogo() {
             </div>
             <Button type="submit" className="w-full mt-3">Verify OTP</Button>
             <p className="text-xs mt-2 text-center">
-              Didn't receive the code? <button type="button" onClick={() => setIsOtpSent(false)} className="text-primary hover:underline">Resend OTP</button>
+              Didn&apos;t receive the code? <button type="button" onClick={() => setIsOtpSent(false)} className="text-primary hover:underline">Resend OTP</button>
             </p>
           </form>
         )}
