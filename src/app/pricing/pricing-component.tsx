@@ -61,8 +61,8 @@ export default function PricingComponent() {
             transition={{ duration: 0.3 }}
           >
             <Card className="flex flex-col h-full bg-card text-card-foreground">
-              <CardHeader>
-                <CardTitle className="text-primary text-2xl">{plan.name}</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-primary text-3xl ">{plan.name}</CardTitle>
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="text-3xl font-bold mb-2 text-foreground">
