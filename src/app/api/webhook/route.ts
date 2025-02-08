@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js"; //use this for RLS BYPASS
 
 
 export async function POST(req: Request) {
@@ -27,6 +28,11 @@ export async function POST(req: Request) {
         // Fulfill the purchase...
         console.log('Payment was successful');
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+        const supabaseservice = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+        await supabaseservice
+            .from('user_billing')
+            .update({ stripe_customer_id: subscription.customer })
+            .eq('id', subscription.metadata.userID);
         console.log(subscription.metadata.userID);
         console.log(subscription.customer);
     }

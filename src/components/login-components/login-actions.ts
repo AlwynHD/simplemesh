@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClientServer } from '@/utils/supabase/server'
 
 export async function reqOTP(formData: FormData) {
-  const supabase = createClient()
+  const supabase = createClientServer()
 
   // type-casting here for convenience
   // in practice, you should validate your inputs
@@ -28,7 +28,7 @@ export async function reqOTP(formData: FormData) {
 }
 
 export async function verifyotp(formData: FormData) {
-  const supabase = createClient()
+  const supabase = createClientServer()
   const email = formData.get('email') as string
   const otp = formData.get('otp') as string
 
@@ -50,7 +50,7 @@ export async function verifyotp(formData: FormData) {
 }
 
 export async function signInWithGoogle() {
-  const supabase = createClient();
+  const supabase = createClientServer();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -71,7 +71,7 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const supabase = createClient();
+  const supabase = createClientServer();
   const { error } = await supabase.auth.signOut();
 
   if (error) {

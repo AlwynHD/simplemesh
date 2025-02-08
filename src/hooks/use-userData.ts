@@ -22,7 +22,7 @@ const useUserData = () => {
                     .select('full_name, avatar_url')
                     .eq('id', data.user.id)
                     .single();
-
+                console.log(userData)
                 if (userError) {
                     setError(new Error(userError.message));
                     return;

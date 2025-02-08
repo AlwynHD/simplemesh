@@ -16,7 +16,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { createClient } from "@/utils/supabase/server"
+import { createClientServer } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
 
@@ -25,7 +25,7 @@ export default async function DashboardLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const supabase = createClient()
+    const supabase = createClientServer()
 
     const { data, error } = await supabase.auth.getUser()
     if (error || !data?.user) {

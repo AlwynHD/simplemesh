@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
+import { createClientServer } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
 import {
@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
 export default async function Text3D() {
 
-  const supabase = createClient()
+  const supabase = createClientServer()
 
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {

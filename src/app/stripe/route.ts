@@ -1,23 +1,22 @@
 import { stripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 // import useUserData from "@/hooks/use-userData";
-import { createClient } from "@/utils/supabase/server"
-
-export async function GET() {
+import { createClientServer } from "@/utils/supabase/server"
+export async function GET(request: Request) {
     try {
-        const supabase = createClient()
+        const supabase = createClientServer()
         const { data, error } = await supabase.auth.getUser()
-
         if (error || !data?.user) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
         const { data: userData, error: userError } = await supabase
-            .from('profiles')
+            .from('user_billing')
             .select('stripe_customer_id')
             .eq('id', data.user.id)
             .single();
-        
+
+        console.log(userData)
         if (userData && userData.stripe_customer_id) {
             console.log("User has a stripe customer id")
             const stripeSession = await stripe.billingPortal.sessions.create({
@@ -27,6 +26,11 @@ export async function GET() {
             return NextResponse.redirect(stripeSession.url!, 303);
         }
 
+        const { searchParams } = new URL(request.url);
+        console.log(searchParams)
+        const priceID = searchParams.get("priceID") || process.env.STRIPE_PRICE_ID;
+        console.log(priceID)
+
         const stripeSession = await stripe.checkout.sessions.create({
             success_url: `http://localhost:3000/pricing`,
             cancel_url: `http://localhost:3000/dashboard`,
@@ -35,7 +39,7 @@ export async function GET() {
             customer_email: data.user.email ?? '',
             line_items: [
                 {
-                    price: process.env.STRIPE_PRICE_ID,
+                    price: priceID,
                     quantity: 1,
                 },
             ],
