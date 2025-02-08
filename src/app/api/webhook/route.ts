@@ -13,17 +13,18 @@ export async function POST(req: Request) {
 
     try {
         event = stripe.webhooks.constructEvent(
-            body, 
-            signature, 
+            body,
+            signature,
             process.env.STRIPE_WEBHOOK_SECRET!
         );
-        
+
     } catch (err) {
         return new NextResponse('Webhook Error: Invalid signature', { status: 400 });
     }
 
+
     const session = event.data.object as Stripe.Checkout.Session;
-    console.log(session)
+
     if (event.type === 'checkout.session.completed') {
         // Fulfill the purchase...
         console.log('Payment was successful');
@@ -36,6 +37,49 @@ export async function POST(req: Request) {
         console.log(subscription.metadata.userID);
         console.log(subscription.customer);
     }
+
+    //every time user pays successfully including the first one
+    //so we need to add credits here
+    if (event.type === 'invoice.payment_succeeded') {
+        const invoice = event.data.object;
+        const subscriptionId = invoice.subscription;
+
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+
+        const priceId = subscription.items.data[0].price.id;
+
+        let credits = 0
+
+        if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') {
+            credits = 1000;
+        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') {
+            credits = 2000;
+        }
+        else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') {
+            credits = 3000;
+        }
+
+        const supabaseservice = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+        await supabaseservice
+            .from('user_billing')
+            .update({ credits: credits })
+            .eq('stripe_customer_id', subscription.customer);
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object; // the deleted subscription object
+      
+        // Assuming you use Stripe's customer id as the key in your DB:
+        const stripeCustomerId = subscription.customer;
+
+        // Update the user's record to set credits to 0
+        const supabaseservice = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+        await supabaseservice
+          .from('user_billing')
+          .update({ credits: 0 })
+          .eq('stripe_customer_id', stripeCustomerId);
+      
+      }
 
     return new NextResponse('ok', { status: 200 });
 
