@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
 
         //get stripeID from user_billing table
-        const { data: userData, error: userError } = await supabase
+        const { data: userData } = await supabase
             .from('user_billing')
             .select('stripe_customer_id')
             .eq('id', data.user.id)

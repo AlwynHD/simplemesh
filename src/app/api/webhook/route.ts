@@ -19,6 +19,11 @@ export async function POST(req: Request) {
         );
 
     } catch (err) {
+        if (err instanceof Error) {
+            console.log(`Webhook Error: ${err.message}`);
+        } else {
+            console.log('Webhook Error: Unknown error');
+        }
         return new NextResponse('Webhook Error: Invalid signature', { status: 400 });
     }
 
