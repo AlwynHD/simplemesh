@@ -33,12 +33,10 @@ import {
 } from "@/components/ui/sidebar"
 import { signOut } from "@/components/login-components/login-actions"
 import useUserData from "@/hooks/use-userData"
-import Link from "next/link"
-export function NavUser({ }: {}) {
+export function NavUser({ }: object) {
   const { isMobile } = useSidebar()
   const { user, error, isLoading } = useUserData();
   const router = useRouter()
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>

@@ -11,7 +11,7 @@ const useUserData = () => {
             try {
                 const supabase = createClient();
                 const { data, error: authError } = await supabase.auth.getUser();
-
+                
                 if (authError || !data?.user) {
                     setError(authError || new Error('User not found'));
                     return;
