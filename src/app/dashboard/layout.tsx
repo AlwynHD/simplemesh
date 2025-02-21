@@ -21,6 +21,8 @@ import { redirect } from "next/navigation"
 import { CreditCard } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
+
+import { getUserBilling, getUserPlan } from "@/components/actions/billingActions"
 export default async function DashboardLayout({
     children,
 }: Readonly<{
@@ -35,6 +37,12 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    const [billingData, planData] = await Promise.all([
+        getUserBilling(),
+        getUserPlan()
+    ])
+    console.log("billingData", billingData)
+    console.log("plandata", planData)
 
     return (
         <SidebarProvider>
@@ -56,11 +64,11 @@ export default async function DashboardLayout({
                                 <div className="flex items-center gap-1.5">
                                     <CreditCard className="w-4 h-4 text-muted-foreground" />
                                     <span className="text-sm text-muted-foreground">Credits:</span>
-                                    <span className="text-sm font-semibold text-foreground">247</span>
+                                    <span className="text-sm font-semibold text-foreground">{billingData.credits}</span>
                                 </div>
                                 <Separator orientation="vertical" className="h-4 mx-2" />
                                 <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                                    Pro Plan
+                                    {planData.plan}
                                 </Badge>
                             </div>
 
