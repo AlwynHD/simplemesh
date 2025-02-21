@@ -41,7 +41,7 @@ const data = {
         },
         {
           title: "Image to 3D",
-          url: "#",
+          url: "dashboard/image-3d",
         },
         {
           title: "Texture Generation",

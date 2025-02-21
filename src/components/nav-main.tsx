@@ -20,7 +20,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export  function NavMain({
+export function NavMain({
   items,
 }: {
   items: {
@@ -59,7 +59,13 @@ export  function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <a
+                          href={subItem.url}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.location.pathname = subItem.url;
+                          }}
+                        >
                           <span>{subItem.title}</span>
                         </a>
                       </SidebarMenuSubButton>
