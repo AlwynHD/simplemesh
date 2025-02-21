@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/sidebar"
 import { createClientServer } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-
-
+import { CreditCard } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { NavUser } from "@/components/nav-user"
 export default async function DashboardLayout({
     children,
 }: Readonly<{
@@ -39,21 +40,33 @@ export default async function DashboardLayout({
         <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-                    <div className="flex items-center gap-2 px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="mr-2 h-4" />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">Features</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Text to 3D</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                <header className="flex h-16 shrink-0 items-center border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+                    <div className="flex w-full items-center justify-between px-4">
+                        {/* Left section */}
+                        <div className="flex items-center gap-4">
+                            <SidebarTrigger className="-ml-2 mr-2" />
+                            <Separator orientation="vertical" className="h-5" />
+                            {/* You can add breadcrumbs or page title here */}
+                        </div>
+
+                        {/* Right section */}
+                        <div className="flex items-center gap-4">
+                            {/* Credits display */}
+                            <div className="flex items-center gap-2 bg-secondary/10 px-4 py-1.5 rounded-full border border-border/50">
+                                <div className="flex items-center gap-1.5">
+                                    <CreditCard className="w-4 h-4 text-muted-foreground" />
+                                    <span className="text-sm text-muted-foreground">Credits:</span>
+                                    <span className="text-sm font-semibold text-foreground">247</span>
+                                </div>
+                                <Separator orientation="vertical" className="h-4 mx-2" />
+                                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                                    Pro Plan
+                                </Badge>
+                            </div>
+
+                            {/* User menu */}
+                            <NavUser variant="small" />
+                        </div>
                     </div>
                 </header>
                 <div className="relative flex flex-col h-full w-full">

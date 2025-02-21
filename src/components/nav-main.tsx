@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
+import { useRouter } from 'next/navigation';
 
 import {
   Collapsible,
@@ -34,6 +35,7 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const router = useRouter();
 
   return (
     <SidebarGroup>
@@ -63,7 +65,7 @@ export function NavMain({
                           href={subItem.url}
                           onClick={(e) => {
                             e.preventDefault();
-                            window.location.pathname = subItem.url;
+                            router.push(subItem.url); // Use Next.js router instead of window.location
                           }}
                         >
                           <span>{subItem.title}</span>
