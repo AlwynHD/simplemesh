@@ -6,19 +6,21 @@ import { Suspense } from 'react'
 interface ModelProps {
   url: string
   scale?: [number, number, number]
+  position?: [number, number, number]
 }
 
-function Model({ url, scale = [1, 1, 1] }: ModelProps) {
+function Model({ url, scale = [1, 1, 1], position = [0, 0, 0] }: ModelProps) {
   const { scene } = useGLTF(url)
   scene.scale.set(...scale)
+  scene.position.set(...position)
   return <primitive object={scene} />
 }
-
 export default function ModelViewer({ modelUrl }: { modelUrl?: string }) {
   return (
     <div className="w-full h-full overflow-hidden">
       <Canvas shadows camera={{ position: [5, 5, 5], fov: 75 }}>
         <Suspense fallback={null}>
+          <ambientLight intensity={1} />
           <Stage environment="city" intensity={0.6}>
             <Grid
               position={[0, -0.5, 0]}
@@ -33,13 +35,13 @@ export default function ModelViewer({ modelUrl }: { modelUrl?: string }) {
               fadeStrength={1}
               followCamera={false}
             />
-            {modelUrl ? (
+            {/* {modelUrl ? (
               <Model url={modelUrl} scale={[1, 1, 1]} />
             ) : (
-              <mesh position={[0, 0.5, 0]}>
-                <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color="orange" />
-              </mesh>
+              <Model url="/output.glb" scale={[5, 5, 5]} position={[0, 3, 0]} />
+            )} */}
+            {modelUrl && (
+              <Model url={modelUrl} scale={[1, 1, 1]} position={[0, 3, 0]} />
             )}
           </Stage>
           <OrbitControls makeDefault />
