@@ -19,14 +19,14 @@ import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
 export default async function Text3D() {
 
-  const supabase = createClientServer()
+  // const supabase = createClientServer()
 
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    console.log(error)
-    console.log(data)
-    redirect('/login')
-  }
+  // const { data, error } = await supabase.auth.getUser()
+  // if (error || !data?.user) {
+  //   console.log(error)
+  //   console.log(data)
+  //   redirect('/login')
+  // }
 
   return (
     <div className="flex h-full">

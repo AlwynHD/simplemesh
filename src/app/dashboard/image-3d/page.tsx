@@ -1,6 +1,5 @@
-"use server"
+"use client"
 
-import { createClientServer } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
 import {
@@ -17,17 +16,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
+import { image3D } from "@/components/actions/featuresActions"
+import { useCreditStore } from '@/stores/creditStore'
+import { useState } from 'react'
+
 export default async function Text3D() {
+  const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClientServer()
+  const setCredits = useCreditStore(state => state.setCredits)
+    
+  const handleGenerate = async () => {
+    try {
+      const result = await image3D()
+      
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
 
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    console.log(error)
-    console.log(data)
-    redirect('/login')
+      if (result?.updatedCredits) {
+        setCredits(result.updatedCredits)
+      }
+    } catch (err) {
+      setError('Failed to generate model')
+    }
   }
-
+  
   return (
     <div className="flex h-full">
       <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">
@@ -38,7 +52,7 @@ export default async function Text3D() {
 
             <SidebarGroupContent className="p-2 space-y-4">
               <div>
-                <Label htmlFor="prompt">Image</Label>
+                <Label htmlFor="prompt">Prompt</Label>
                 <Textarea
                   id="prompt"
                   placeholder="Enter text prompt..."
@@ -48,7 +62,7 @@ export default async function Text3D() {
               </div>
 
               <div>
-                <Label htmlFor="seed">Seed</Label>
+                <Label htmlFor="seed">Seed </Label>
                 <Input
                   id="seed"
                   type="number"
@@ -59,7 +73,7 @@ export default async function Text3D() {
                 />
               </div>
 
-              <Button className="w-full">
+              <Button className="w-full" onClick={() => handleGenerate()}>
                 Generate Model
               </Button>
             </SidebarGroupContent>
@@ -77,6 +91,6 @@ export default async function Text3D() {
         </p>
       </div> */}
     </div>
-    
+
   )
 }
