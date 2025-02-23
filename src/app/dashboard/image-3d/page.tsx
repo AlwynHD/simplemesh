@@ -1,16 +1,13 @@
 "use client"
 
 import { redirect } from "next/navigation"
-
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-
 } from "@/components/ui/sidebar"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,28 +17,64 @@ import { image3D } from "@/components/actions/featuresActions"
 import { useCreditStore } from '@/stores/creditStore'
 import { useState } from 'react'
 
-export default async function Text3D() {
+export default function Text3D() {
   const [error, setError] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [modelUrl, setModelUrl] = useState<string>()
 
   const setCredits = useCreditStore(state => state.setCredits)
-    
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setSelectedImage(file)
+      // Create preview URL
+      const url = URL.createObjectURL(file)
+      setImagePreview(url)
+    }
+  }
+
   const handleGenerate = async () => {
     try {
-      const result = await image3D()
-      
-      if (result?.error) {
-        setError(result.error)
+      if (!selectedImage) {
+        setError('Please select an image')
         return
       }
 
-      if (result?.updatedCredits) {
-        setCredits(result.updatedCredits)
+      // Convert image to base64
+      const reader = new FileReader()
+      reader.readAsDataURL(selectedImage)
+
+      reader.onload = async () => {
+        const base64Image = reader.result as string
+
+        const result = await image3D({
+          image: base64Image
+        })
+
+        if (result?.error) {
+          setError(result.error)
+          return
+        }
+        console.log(result)
+        if (result?.updatedCredits) {
+          setCredits(result.updatedCredits)
+          console.log("Updated credits:", result.updatedCredits)
+        }
+        if (result.modelUrl) {
+          const urlString = result.modelUrl.toString();
+          setModelUrl(urlString);          
+          console.log("Model URL:", result.modelUrl)
+        } else {
+          console.log("No model URL returned", result)
+        }
       }
     } catch (err) {
       setError('Failed to generate model')
     }
   }
-  
+
   return (
     <div className="flex h-full">
       <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">
@@ -52,45 +85,34 @@ export default async function Text3D() {
 
             <SidebarGroupContent className="p-2 space-y-4">
               <div>
-                <Label htmlFor="prompt">Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  placeholder="Enter text prompt..."
-                  className="mt-1.5 min-h-[100px] resize-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="seed">Seed </Label>
+                <Label htmlFor="image">Upload Image</Label>
                 <Input
-                  id="seed"
-                  type="number"
-                  placeholder="Enter number..."
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
                   className="mt-1.5"
-                  min={1}
                   required
                 />
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="mt-2 max-w-full h-auto rounded"
+                  />
+                )}
               </div>
 
-              <Button className="w-full" onClick={() => handleGenerate()}>
+              <Button className="w-full" onClick={handleGenerate}>
                 Generate Model
               </Button>
             </SidebarGroupContent>
           </SidebarGroup>
-
         </SidebarContent>
       </Sidebar>
       <main className="flex-1 bg-muted/50  overflow-hidden">
-        <ModelViewer/>
-
+        <ModelViewer modelUrl={modelUrl} />
       </main>
-      {/* <div className="fixed bottom-4 right-4 p-4 bg-background/80 backdrop-blur rounded-lg border border-border shadow-lg">
-        <p className="text-sm text-muted-foreground">
-          Generate 3D models from text descriptions using AI. Enter a prompt and seed value, then click Generate.
-        </p>
-      </div> */}
     </div>
-
   )
 }
