@@ -17,7 +17,7 @@ import { image3D } from "@/components/actions/featuresActions"
 import { useCreditStore } from '@/stores/creditStore'
 import { useState } from 'react'
 
-export default function Text3D() {
+export default function Image3D() {
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)

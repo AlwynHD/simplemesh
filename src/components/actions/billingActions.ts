@@ -117,3 +117,8 @@ export async function getUserPlan(): Promise<PlanResponse> {
         }
     }
 }
+
+export async function isUserOnFreePlan(): Promise<boolean> {
+    const userPlanResponse = await getUserPlan();
+    return userPlanResponse.plan === 'Free Plan';
+  }

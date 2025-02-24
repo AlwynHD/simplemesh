@@ -1,4 +1,5 @@
 "use client"
+import { useSidebar } from "@/hooks/use-sidebar"
 
 import * as React from "react"
 import {
@@ -6,7 +7,11 @@ import {
   Map,
   PieChart,
   Layers,
+  Image,
+  Quote,
+  Grid,
   BookOpen,
+  Sparkles
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -18,9 +23,13 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarGroupLabel
 } from "@/components/ui/sidebar"
+import { isUserOnFreePlan } from "./actions/billingActions"
+import { useEffect, useState } from "react"
+import Link from "next/link"
 // This is sample data.
-
+import { Lock } from "lucide-react"
 const data = {
   teams: [
     {
@@ -29,114 +38,72 @@ const data = {
       plan: "Free",
     },
   ],
-  navMain: [
-    {
-      title: "Core Features",
-      url: "#",
-      icon: Layers,
-      isActive: true,
-      items: [
-        {
-          title: "Text To 3D",
-          url: "dashboard/text-3d",
-        },
-        {
-          title: "Image to 3D",
-          url: "dashboard/image-3d",
-        },
-        {
-          title: "Texture Generation",
-          url: "#",
-        },
-      ],
-    },
-    
-    // {
-    //   title: "Models",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Genesis",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Explorer",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Quantum",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Documentation",
-    //   url: "#",
-    //   icon: BookOpen,
-    //   items: [
-    //     {
-    //       title: "Introduction",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Get Started",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Tutorials",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Changelog",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: Settings2,
-    //   items: [
-    //     {
-    //       title: "General",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Team",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Billing",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Limits",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-}
+  guide: [
 
-export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+    {
+      title: "Guide",
+      url: "#",
+      icon: BookOpen,
+    }
+  ],
+  navMain: [
+    // {
+    //   title: "Core Features",
+    //   url: "#",
+    //   icon: Layers,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: "Text To 3D",
+    //       url: "dashboard/text-3d",
+    //     },
+    //     {
+    //       title: "Image to 3D",
+    //       url: "dashboard/image-3d",
+    //     },
+    //     {
+    //       title: "Texture Generation",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
+    {
+      title: "Image To 3D",
+      url: "dashboard/image-3d",
+      icon: Image,
+    },
+    {
+      title: "Text To 3D",
+      url: "dashboard/text-3d",
+      icon: Quote,
+    },
+    {
+      title: "Texture Generation",
+      url: "#",
+      icon: Grid,
+    }
+
+  ],
+
+}
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [isFreePlan, setIsFreePlan] = useState(false)
+  const { isOpen } = useSidebar();
+
+
+  useEffect(() => {
+    async function checkPlan() {
+      const free = await isUserOnFreePlan()
+      setIsFreePlan(free)
+    }
+    checkPlan()
+  }, [])
+  const sidebarState = useSidebar();
+  useEffect(() => {
+    console.log("Current sidebar state:", sidebarState);
+  }, [sidebarState]);
+  console.log(useSidebar.getState());
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -145,6 +112,36 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      {isFreePlan && isOpen && (
+        <Link
+          href="/pricing"
+          className="mx-4 my-4 block hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
+          aria-label="Upgrade to full plan for full feature access"
+        >
+          <div className="p-4 rounded-md bg-primary/10 text-center text-primary shadow-sm border border-primary/20 hover:bg-primary/20 cursor-pointer">
+            {/* Sparkles Icon */}
+            <div className="flex justify-center mb-3">
+              <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
+            </div>
+
+            {/* Friendly Heading */}
+            <h2 className="text-base font-semibold text-primary">Free Plan Access</h2>
+
+            {/* Updated Subtext */}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Upgrade to access our full set of features.
+            </p>
+
+            {/* Upgrade Now Button */}
+            <div className="inline-flex items-center justify-center mt-2 px-3 py-1.5 bg-primary text-white rounded-md transition-colors text-sm hover:bg-primary/90">
+              <Lock className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              Upgrade Now
+            </div>
+          </div>
+        </Link>
+      )}
+
+      <NavMain items={data.guide} />
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
