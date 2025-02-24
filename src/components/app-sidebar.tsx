@@ -1,12 +1,9 @@
 "use client"
-import { useSidebar } from "@/hooks/use-sidebar"
+import { useSidebar } from "@/components/ui/sidebar"
 
 import * as React from "react"
 import {
-  Frame,
-  Map,
-  PieChart,
-  Layers,
+
   Image,
   Quote,
   Grid,
@@ -23,7 +20,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  SidebarGroupLabel
 } from "@/components/ui/sidebar"
 import { isUserOnFreePlan } from "./actions/billingActions"
 import { useEffect, useState } from "react"
@@ -88,7 +84,7 @@ const data = {
 }
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isFreePlan, setIsFreePlan] = useState(false)
-  const { isOpen } = useSidebar();
+  const { state } = useSidebar();
 
 
   useEffect(() => {
@@ -98,11 +94,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
     checkPlan()
   }, [])
-  const sidebarState = useSidebar();
-  useEffect(() => {
-    console.log("Current sidebar state:", sidebarState);
-  }, [sidebarState]);
-  console.log(useSidebar.getState());
+
+  console.log(state);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -112,7 +105,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      {isFreePlan && isOpen && (
+      {isFreePlan && state === 'expanded' && (
         <Link
           href="/pricing"
           className="mx-4 my-4 block hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
