@@ -5,7 +5,8 @@ import {
   Frame,
   Map,
   PieChart,
-  SquareTerminal,
+  Layers,
+  BookOpen,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -30,9 +31,9 @@ const data = {
   ],
   navMain: [
     {
-      title: "Features",
+      title: "Core Features",
       url: "#",
-      icon: SquareTerminal,
+      icon: Layers,
       isActive: true,
       items: [
         {
@@ -49,6 +50,7 @@ const data = {
         },
       ],
     },
+    
     // {
     //   title: "Models",
     //   url: "#",
