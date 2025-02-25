@@ -45,8 +45,8 @@ export async function verifyotp(formData: FormData) {
     redirect('/error')
   }
 
-  revalidatePath('/dashboard', 'layout')
-  redirect('/dashboard')
+  revalidatePath('/dashboard/', 'layout')
+  redirect('/dashboard/')
 }
 
 export async function signInWithGoogle() {

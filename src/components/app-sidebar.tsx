@@ -7,8 +7,9 @@ import {
   Image,
   Quote,
   Grid,
-  BookOpen,
+  BookText,
   Sparkles
+
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -39,7 +40,7 @@ const data = {
     {
       title: "Guide",
       url: "#",
-      icon: BookOpen,
+      icon: BookText,
     }
   ],
   navMain: [
@@ -65,12 +66,12 @@ const data = {
     // },
     {
       title: "Image To 3D",
-      url: "dashboard/image-3d",
+      url: "/dashboard/image-3d",
       icon: Image,
     },
     {
       title: "Text To 3D",
-      url: "dashboard/text-3d",
+      url: "/dashboard/text-3d",
       icon: Quote,
     },
     {

@@ -22,7 +22,6 @@ export async function GET(request: Request) {
             .eq('id', data.user.id)
             .single();
 
-
         let stripeSession;
 
         if (userData && userData.stripe_customer_id) {
@@ -44,7 +43,7 @@ export async function GET(request: Request) {
                 console.log("User has an active subscription")
                 stripeSession = await stripe.billingPortal.sessions.create({
                     customer: userData.stripe_customer_id,
-                    return_url: `http://localhost:3000/dashboard`,
+                    return_url: `http://localhost:3000/dashboard/`,
                 });
             } else {
                 // The user does not have an active subscription.
@@ -52,7 +51,7 @@ export async function GET(request: Request) {
                 console.log("User has a stripe customer id but no active subscription")
                 stripeSession = await stripe.checkout.sessions.create({
                     success_url: `http://localhost:3000/pricing`,
-                    cancel_url: `http://localhost:3000/dashboard`,
+                    cancel_url: `http://localhost:3000/dashboard/`,
                     payment_method_types: ["card"],
                     mode: "subscription",
                     customer: userData.stripe_customer_id, // Reuse existing customer.

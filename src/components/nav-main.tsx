@@ -85,13 +85,15 @@ export function NavMain({
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton tooltip={item.title} asChild>
-                  <a
-                    href={item.url}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      router.push(item.url);
-                    }}
-                  >
+                <a
+  href={item.url}
+  onClick={(e) => {
+    e.preventDefault();
+    // Use the absolute path directly since we've defined them fully in data
+    router.push(item.url);
+  }}
+>
+                    
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </a>

@@ -34,7 +34,7 @@ import {
 import { signOut } from "@/components/login-components/login-actions"
 import useUserData from "@/hooks/use-userData"
 export function NavUser({ variant = "default" }: { variant?: "default" | "small" }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, state } = useSidebar()
   const { user, error, isLoading } = useUserData();
   const router = useRouter()
 
@@ -86,14 +86,15 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
               <BadgeCheck />
               Account
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <CreditCard />
-              Billing
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell />
-              Notifications
-            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+  <form action="/stripe" method="GET">
+    <button className="flex w-full items-center">
+      <CreditCard className="mr-2 h-4 w-4" />
+      Billing
+    </button>
+  </form>
+</DropdownMenuItem>
+
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
 
@@ -154,14 +155,15 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+  <form action="/stripe" method="GET">
+    <button className="flex w-full items-center">
+      <CreditCard className="mr-2 h-4 w-4" />
+      Billing
+    </button>
+  </form>
+</DropdownMenuItem>
+
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
 
