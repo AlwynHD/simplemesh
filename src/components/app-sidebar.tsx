@@ -44,26 +44,6 @@ const data = {
     }
   ],
   navMain: [
-    // {
-    //   title: "Core Features",
-    //   url: "#",
-    //   icon: Layers,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "Text To 3D",
-    //       url: "dashboard/text-3d",
-    //     },
-    //     {
-    //       title: "Image to 3D",
-    //       url: "dashboard/image-3d",
-    //     },
-    //     {
-    //       title: "Texture Generation",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
     {
       title: "Image To 3D",
       url: "/dashboard/image-3d",
