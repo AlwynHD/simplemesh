@@ -73,13 +73,7 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
               </div>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <Sparkles />
-              Upgrade to Pro
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
+
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
@@ -87,13 +81,13 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
               Account
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-  <form action="/stripe" method="GET">
-    <button className="flex w-full items-center">
-      <CreditCard className="mr-2 h-4 w-4" />
-      Billing
-    </button>
-  </form>
-</DropdownMenuItem>
+              <form action="/stripe" method="GET">
+                <button className="flex w-full items-center">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Billing
+                </button>
+              </form>
+            </DropdownMenuItem>
 
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -142,13 +136,7 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
@@ -156,13 +144,13 @@ export function NavUser({ variant = "default" }: { variant?: "default" | "small"
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-  <form action="/stripe" method="GET">
-    <button className="flex w-full items-center">
-      <CreditCard className="mr-2 h-4 w-4" />
-      Billing
-    </button>
-  </form>
-</DropdownMenuItem>
+                <form action="/stripe" method="GET">
+                  <button className="flex w-full items-center">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Billing
+                  </button>
+                </form>
+              </DropdownMenuItem>
 
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
