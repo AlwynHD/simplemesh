@@ -61,16 +61,33 @@ export default function PricingComponent() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const closeModal = () => setIsModalOpen(false)
 
-    const handleChoosePlan = async (planLink: string) => {
+    const handleChoosePlan = async (priceID: string, e?: React.MouseEvent) => {
+        // If called from onClick, prevent default form submission
+        if (e) {
+            e.preventDefault();
+        }
+
         const isAuthenticated = await checkUserAuth()
 
         if (!isAuthenticated) {
             setIsModalOpen(true)
         } else {
-            router.push(planLink + "?prefilled_email=" + user?.email)
-
             // Proceed with choosing the plan
-            console.log(`Plan chosen: ${planLink}`)
+            console.log(`Plan chosen with priceID: ${priceID}`)
+
+            // Create a form and submit programmatically
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '/stripe';
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'priceID';
+            input.value = priceID;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
         }
     }
 
@@ -115,10 +132,13 @@ export default function PricingComponent() {
                             <CardFooter>
                                 <form action={`/stripe`} method="GET">
                                     <input type="hidden" name="priceID" value={plan.priceID} />
-                                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                                    <Button
+                                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                                         type="submit"
-                                        onClick={() => console.log("Current price id:", plan.priceID)}
-                                    >Choose Plan</Button>
+                                        onClick={(e) => handleChoosePlan(plan.priceID, e)}
+                                    >
+                                        Choose Plan
+                                    </Button>
                                 </form>
                             </CardFooter>
                         </Card>

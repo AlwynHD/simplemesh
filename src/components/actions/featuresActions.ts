@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import Replicate from 'replicate'
 
 
-  export async function image3D(input: { image: string }): Promise<{ updatedCredits?: number; modelUrl?: string; error?: string }> {
+  export async function image3D(input: { image: string, seed?: number }): Promise<{ updatedCredits?: number; modelUrl?: string; error?: string }> {
     try {
 
         const supabase = createClientServer()
@@ -63,18 +63,20 @@ import Replicate from 'replicate'
             useFileOutput: false,
         })
 
+
+
         // Here we pass the base64 image into the images array
         const output = await replicate.run(
             "alwynhd/trellis_alwyn:b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
             {
                 input: {
                     images: [input.image],
-                    seed: 0,
+                    seed: input.seed !== undefined ? input.seed : 0,
                     texture_size: 1024,
                     mesh_simplify: 0.95,
-                    generate_color: true,
+                    generate_color: false,
                     generate_model: true,
-                    randomize_seed: true,
+                    randomize_seed: input.seed === undefined,
                     generate_normal: false,
                     save_gaussian_ply: false,
                     ss_sampling_steps: 12,

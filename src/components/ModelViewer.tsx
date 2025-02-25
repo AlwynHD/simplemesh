@@ -35,14 +35,14 @@ export default function ModelViewer({ modelUrl }: { modelUrl?: string }) {
               fadeStrength={1}
               followCamera={false}
             />
-            {/* {modelUrl ? (
+            {modelUrl ? (
               <Model url={modelUrl} scale={[1, 1, 1]} />
             ) : (
-              <Model url="/output.glb" scale={[5, 5, 5]} position={[0, 3, 0]} />
-            )} */}
-            {modelUrl && (
-              <Model url={modelUrl} scale={[1, 1, 1]} position={[0, 3, 0]} />
+              <Model url="/output3.glb" scale={[5, 5, 5]} position={[0, 3, 0]} />
             )}
+            {/* {modelUrl && (
+              <Model url={modelUrl} scale={[1, 1, 1]} position={[0, 3, 0]} />
+            )} */}
           </Stage>
           <OrbitControls makeDefault />
         </Suspense>
