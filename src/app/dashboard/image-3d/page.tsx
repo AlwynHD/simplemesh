@@ -18,6 +18,9 @@ import { useCreditStore } from '@/stores/creditStore'
 import { useState, useEffect } from 'react'
 import { Box, Image, X, RefreshCw, Wand2, Loader } from 'lucide-react'
 
+import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator';
+
+
 export default function Image3D() {
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -122,14 +125,23 @@ export default function Image3D() {
           console.log("Updated credits:", result.updatedCredits)
         }
 
-        if (result.modelUrl) {
+        if (result.modelUrl && result.modelId) {
           const urlString = result.modelUrl.toString();
           setModelUrl(urlString);
-          console.log("Model URL:", result.modelUrl)
+          console.log("Model URL:", result.modelUrl);
+        
+          generateAndUploadThumbnail(urlString, result.modelId)
+          .catch(error => {
+            console.error("Error in thumbnail workflow:", error);
+          });
+          console.log("Thumbnail generation started");
+        
         } else {
           console.log("No model URL returned", result)
           setError("No model URL returned")
         }
+
+        
 
         setIsLoading(false)
         loadingRef.current = false;
@@ -149,7 +161,37 @@ export default function Image3D() {
   }
 }
 
+const generateAndUploadThumbnail = async (modelUrl: string, modelId: string): Promise<void> => {
+  try {
+    console.log("Generating thumbnail for model:", modelUrl);
+    
+    // Extract the model ID from the URL
+    // Assuming the URL format is something like: https://example.com/path/to/modelId.glb
 
+    
+    // Create a thumbnail generator
+    const thumbnailGenerator = createThumbnailGenerator({
+      width: 512,
+      height: 512,
+      backgroundColor: '#f0f0f0',
+    });
+    
+    // Generate the thumbnail
+    const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(modelUrl);
+    console.log("Thumbnail generated successfully");
+    
+    // Upload the thumbnail to S3
+    const uploadSuccess = await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, modelId);
+    
+    if (uploadSuccess) {
+      console.log("Thumbnail uploaded successfully");
+    } else {
+      console.error("Failed to upload thumbnail");
+    }
+  } catch (error) {
+    console.error("Error generating or uploading thumbnail:", error);
+  }
+};
   return (
     <div className="flex h-full relative">
       <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">

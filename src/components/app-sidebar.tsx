@@ -8,8 +8,9 @@ import {
   Quote,
   Grid,
   BookText,
-  Sparkles
-
+  Sparkles,
+  Home,
+  LayoutDashboard
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -27,6 +28,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 // This is sample data.
 import { Lock } from "lucide-react"
+import { title } from "process"
 const data = {
   teams: [
     {
@@ -44,6 +46,11 @@ const data = {
     }
   ],
   navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
     {
       title: "Image To 3D",
       url: "/dashboard/image-3d",
