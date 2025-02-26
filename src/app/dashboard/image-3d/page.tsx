@@ -259,7 +259,7 @@ export default function Image3D() {
 
 
               {containerStatus === 'cold' && (
-                <p className="text-muted-foreground mt-2">Container is cold booting. This may take up to 4 minutes.</p>
+                <p className="text-muted-foreground mt-2">Container is cold booting. This may take up to 5 minutes.</p>
               )}
             </div>
           </div>
