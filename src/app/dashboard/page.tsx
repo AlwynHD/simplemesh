@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation"
 import { listUserModels } from "@/components/actions/featuresActions"
 import Image from "next/image"
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator';
-import { cn } from "@/lib/utils"
 
 interface Model {
   id: string;
@@ -46,14 +45,21 @@ export default function DashboardPage() {
           const savedFavorites = JSON.parse(localStorage.getItem('modelFavorites') || '{}');
 
           // Apply saved favorite status to models
-          const modelsWithFavorites = result.models.map(model => ({
-            ...model,
-            favorite: savedFavorites[model.id] || model.favorite || false,
-            // Convert GLB URL to potential thumbnail URL
-            thumbnailUrl: model.url.replace('/models/', '/thumbnails/').replace('.glb', '.jpg')
+          const modelsWithFavorites = result.models.map(model => {
+            const thumbnailUrl = model.url.replace('/models/', '/thumbnails/').replace('.glb', '.jpg');
+            console.log(`Model ${model.id} (${model.name})`);
+            console.log(`- Original URL: ${model.url}`);
+            console.log(`- Thumbnail URL: ${thumbnailUrl}`);
             
-          }));
+            return {
+              ...model,
+              favorite: savedFavorites[model.id] || model.favorite || false,
+              // Convert GLB URL to potential thumbnail URL
+              thumbnailUrl
+            };
+          });
           
+          console.log('All thumbnail URLs:', modelsWithFavorites.map(m => m.thumbnailUrl));
           setModels(modelsWithFavorites);
         }
       } catch (err) {
