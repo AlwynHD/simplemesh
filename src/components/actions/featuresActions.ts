@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import Replicate from 'replicate'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
+import { HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 // Initialize S3 client
 const s3Client = new S3Client({
@@ -71,7 +72,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
       no_background_images: string[];
       normal_video: string;
     }
-    
+
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN!,
       useFileOutput: false,
@@ -104,11 +105,11 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
       try {
         // Download file from Replicate
         const fileBuffer = await downloadFile(output.model_file);
-        
+
         // Generate UUID and path
-        
+
         const fileKey = `users/${userId}/models/${fileId}.glb`;
-        
+
         // Upload to S3
         const command = new PutObjectCommand({
           Bucket: process.env.S3_BUCKET_NAME!,
@@ -116,16 +117,20 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
           Body: fileBuffer,
           ContentType: 'model/gltf-binary'
         });
-        
+
         await s3Client.send(command);
-        
+        await storeModelMetadata(
+          userId,
+          fileId,
+          input.image
+        );
         // Important: Keep returning the original Replicate URL instead of the S3 URL
         // Don't modify output.model_file to prevent the S3 URL from being used
       } catch (uploadError) {
         console.error('Error uploading to S3:', uploadError);
       }
     }
-    
+
     // Return the original Replicate URL
     return {
       updatedCredits,
@@ -141,35 +146,56 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
 
 import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 
-export async function listUserModels(): Promise<{ models: Array<{id: string, name: string, url: string, createdAt: string, favorite: boolean}> | null; error?: string }> {
+export async function listUserModels(): Promise<{ models: Array<{ id: string, name: string, url: string, createdAt: string, favorite: boolean }> | null; error?: string }> {
   try {
     const supabase = createClientServer()
-    
+
     // Get authenticated user
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { models: null, error: 'User not authenticated' }
     }
     const userId = data.user.id;
-    
+
     // List objects in the user's folder
     const command = new ListObjectsV2Command({
       Bucket: process.env.S3_BUCKET_NAME!,
       Prefix: `users/${userId}/models/`,
     });
-    
+
     const response = await s3Client.send(command);
-    
+
     if (!response.Contents || response.Contents.length === 0) {
       return { models: [] }
     }
-    
+
+    // Fetch metadata file to get descriptions
+    let metadata: Record<string, { id: string, description: string }> = {};
+    try {
+      const metadataCommand = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME!,
+        Key: `users/${userId}/metadata.json`,
+      });
+
+      const metadataResponse = await s3Client.send(metadataCommand);
+      const metadataString = await metadataResponse.Body?.transformToString();
+      if (metadataString) {
+        metadata = JSON.parse(metadataString);
+      }
+    } catch (error) {
+      // If metadata file doesn't exist or can't be parsed, continue with empty metadata
+      console.error("Error fetching metadata:", error);
+    }
+
     // Transform S3 objects to model data
     const models = response.Contents.map(item => {
       const filename = item.Key!.split('/').pop()!;
       const id = filename.replace('.glb', '');
-      const name = `Model ${id.substring(0, 8)}`;
-      
+
+      // Get description from metadata if available
+      const modelMetadata = metadata[id];
+      const name = modelMetadata?.description || `Model description unavailable`;
+
       return {
         id,
         name,
@@ -179,7 +205,7 @@ export async function listUserModels(): Promise<{ models: Array<{id: string, nam
         favorite: false,
       }
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     return { models };
   } catch (err) {
     console.error('Error listing user models:', err);
@@ -189,31 +215,30 @@ export async function listUserModels(): Promise<{ models: Array<{id: string, nam
 
 
 
-import { HeadObjectCommand } from "@aws-sdk/client-s3";
 
-export async function getModelById(modelId: string): Promise<{ model: {id: string, name: string, url: string, createdAt: string, favorite: boolean} | null; error?: string }> {
+export async function getModelById(modelId: string): Promise<{ model: { id: string, name: string, url: string, createdAt: string, favorite: boolean } | null; error?: string }> {
   try {
     const supabase = createClientServer()
-    
+
     // Get authenticated user
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { model: null, error: 'Access Denied' }
     }
     const userId = data.user.id;
-    
+
     // Get specific object from the user's folder
     const objectKey = `users/${userId}/models/${modelId}.glb`;
-    
+
     // Check if the object exists
     const headCommand = new HeadObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: objectKey,
     });
-    
+
     try {
       const objectData = await s3Client.send(headCommand);
-      
+
       // Object exists, return model data
       return {
         model: {
@@ -242,29 +267,29 @@ export async function getModelById(modelId: string): Promise<{ model: {id: strin
 export async function uploadThumbnail(formData: FormData): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = createClientServer();
-    
+
     // Get authenticated user
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { success: false, error: 'User not authenticated' };
     }
     const userId = data.user.id;
-    
+
     // Get the thumbnail file and model ID from the FormData
     const thumbnailFile = formData.get('thumbnail') as File;
     const modelId = formData.get('modelId') as string;
-    
+
     if (!thumbnailFile || !modelId) {
       return { success: false, error: 'Missing thumbnail or model ID' };
     }
-    
+
     // Convert File to Buffer for S3 upload
     const arrayBuffer = await thumbnailFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // Set the S3 path
     const fileKey = `users/${userId}/thumbnails/${modelId}.jpg`;
-    
+
     // Upload to S3
     const command = new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME!,
@@ -272,12 +297,99 @@ export async function uploadThumbnail(formData: FormData): Promise<{ success: bo
       Body: buffer,
       ContentType: 'image/jpeg'
     });
-    
+
     await s3Client.send(command);
-    
-    return { success: true};
+
+    return { success: true };
   } catch (err) {
     console.error('Error uploading thumbnail:', err);
     return { success: false, error: 'Failed to upload thumbnail' };
   }
+}
+
+
+export async function storeModelMetadata(
+  userId: string,
+  modelId: string,
+  image: string
+): Promise<void> {
+
+  const replicate = new Replicate({
+    auth: process.env.REPLICATE_API_TOKEN!,
+    useFileOutput: false,
+  })
+
+  interface PredictOutput {
+    // The output is an array of strings
+    items: string[];
+  }
+
+  const output = await replicate.run(
+    "orickvp/llava-13b:80537f9eead1a5bfa72d5ac6ea6414379be41d4d4f6679fd776e9535d1eb58bb",
+    {
+      input: {
+        image: image,
+        prompt: "Describe the image's main object in 5 words or less using general language.",
+        // You can also add these optional parameters if needed
+        // top_p: 1,
+        // temperature: 0.2,
+        // max_tokens: 1024
+      }
+    }
+  ) as PredictOutput;
+  console.log(output.items);
+  // To access the response content
+  let description = '';
+  if (output) {
+    if (Array.isArray(output)) {
+      description = output.join('');
+    } else if (typeof output === 'string') {
+      description = output;
+    } else if (output.items && Array.isArray(output.items)) {
+      description = output.items.join('');
+    } else {
+      console.log('Unexpected output format:', output);
+      description = 'Image description unavailable';
+    }
+  }
+
+
+
+
+  // Set up the path for the metadata JSON file
+  const metadataKey = `users/${userId}/metadata.json`;
+
+  // First try to get existing metadata if it exists
+  let existingMetadata: Record<string, any> = {};
+  try {
+    const getCommand = new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: metadataKey
+    });
+
+    const response = await s3Client.send(getCommand);
+    const bodyContents = await response.Body?.transformToString();
+    if (bodyContents) {
+      existingMetadata = JSON.parse(bodyContents);
+    }
+  } catch (error) {
+    // File doesn't exist yet, we'll create it
+    console.log('Creating new metadata file');
+  }
+
+  // Add the new model to metadata
+  existingMetadata[modelId] = {
+    id: modelId,
+    description: description,
+  };
+
+  // Upload updated metadata
+  const metadataCommand = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET_NAME!,
+    Key: metadataKey,
+    Body: JSON.stringify(existingMetadata, null, 2),
+    ContentType: 'application/json'
+  });
+
+  await s3Client.send(metadataCommand);
 }

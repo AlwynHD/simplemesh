@@ -1,163 +1,135 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import ModelViewer from "@/components/ModelViewer"
-import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
-import Image from "next/image"
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { storeModelMetadata } from "@/components/actions/featuresActions";
+import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function ModelThumbnailTest() {
-  const [modelUrl, setModelUrl] = useState<string>("/output.glb")
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+export default function MetadataGeneratorTest() {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
-  const sampleModels = [
-    { name: "Sample Model 1", url: "/output.glb" },
-    { name: "Sample Model 2", url: "/output2.glb" },
-    { name: "Sample Model 3", url: "/output3.glb" }
-  ]
+  // Sample data - in a real app these would come from context or params
+  const sampleUserId = "7ad2e627-da52-4f81-862d-cd5f0efd1edf";
+  const sampleModelId = "sample-model-457";
 
-  const handleSelectModel = (value: string) => {
-    setModelUrl(value)
-    setThumbnailUrl(null) // Reset thumbnail when model changes
-  }
-
-  const handleCustomUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setModelUrl(e.target.value)
-    setThumbnailUrl(null)
-  }
-
-  const generateThumbnail = async () => {
-    if (!modelUrl) {
-      setError("Please provide a model URL")
-      return
-    }
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     
-    setIsLoading(true)
-    setError(null)
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!imageFile || !imagePreview) {
+      setError("Please select an image");
+      return;
+    }
     
     try {
-      const thumbnailGenerator = createThumbnailGenerator({
-        width: 1024,
-        height: 1024,
-        
-      })
+      setIsLoading(true);
+      setError(null);
       
-      const dataUrl = await thumbnailGenerator.generateThumbnail(modelUrl)
-      setThumbnailUrl(dataUrl)
+      // Call the server action with the base64 image data
+      await storeModelMetadata(
+        sampleUserId,
+        sampleModelId,
+        imagePreview
+      );
+      
+      setResult("Metadata successfully generated and stored!");
     } catch (err) {
-      console.error("Error generating thumbnail:", err)
-      setError(`Failed to generate thumbnail: ${err instanceof Error ? err.message : String(err)}`)
+      console.error("Error storing metadata:", err);
+      setError(`Failed to store metadata: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">3D Model Thumbnail Generator</h1>
+      <h1 className="text-3xl font-bold mb-8">Image Metadata Generator</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Model Input Section */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Input Model</h2>
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Upload Image for Metadata Generation</h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="image-upload">Upload an image</Label>
+              <Input 
+                id="image-upload" 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageChange}
+                className="mt-2"
+              />
+            </div>
             
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="model-select">Choose a sample model</Label>
-                <Select onValueChange={handleSelectModel} defaultValue={modelUrl}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a sample model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sampleModels.map((model) => (
-                      <SelectItem key={model.url} value={model.url}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="custom-url">Or enter a custom model URL</Label>
-                <Input 
-                  id="custom-url" 
-                  placeholder="https://example.com/model.glb" 
-                  value={modelUrl}
-                  onChange={handleCustomUrlChange}
+            {imagePreview && (
+              <div className="mt-4">
+                <h3 className="text-lg font-medium mb-2">Image Preview</h3>
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="max-h-64 rounded-md border border-gray-200"
                 />
               </div>
-
-              <Button 
-                onClick={generateThumbnail} 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Generating..." : "Generate Thumbnail"}
-              </Button>
-
-              {error && (
-                <div className="text-red-500 text-sm mt-2">
-                  {error}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Model Viewer */}
-        <Card>
-          <CardContent className="p-0 aspect-square relative">
-            <div className="absolute inset-0">
-              <ModelViewer modelUrl={modelUrl} />
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Thumbnail Result */}
-        <Card className="lg:col-span-2">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Generated Thumbnail</h2>
-            
-            {thumbnailUrl ? (
-              <div className="flex flex-col items-center">
-                <div className="border rounded-md overflow-hidden max-w-md">
-                  <img 
-                    src={thumbnailUrl} 
-                    alt="Generated thumbnail" 
-                    className="w-full h-auto"
-                  />
-                </div>
-                <Button
-                  onClick={() => {
-                    const link = document.createElement('a')
-                    link.href = thumbnailUrl
-                    link.download = 'model-thumbnail.jpg'
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                  }}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  Download Thumbnail
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                {isLoading ? "Generating thumbnail..." : "Click 'Generate Thumbnail' to create a snapshot of the model"}
-              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+            
+            <div className="pt-2">
+              <Button 
+                type="submit" 
+                disabled={isLoading || !imageFile}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating metadata...
+                  </>
+                ) : (
+                  "Generate Metadata"
+                )}
+              </Button>
+            </div>
+          </form>
+          
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {result && (
+            <Alert className="mt-4 bg-green-50 border-green-200">
+              <AlertDescription className="text-green-800">{result}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="mt-4 text-sm text-gray-500">
+            <p>Using sample data:</p>
+            <p>User ID: {sampleUserId}</p>
+            <p>Model ID: {sampleModelId}</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }
