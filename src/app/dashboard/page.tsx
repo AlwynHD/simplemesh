@@ -5,13 +5,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Eye, Download, Trash2, Search, Star, Grid3X3, Loader, Square } from "lucide-react"
+import { Eye, Download, Trash2, Search, Star, Grid3X3, Loader, Square, Plus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { listUserModels } from "@/components/actions/featuresActions"
 import Image from "next/image"
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator';
+import { motion } from "framer-motion";
 
 interface Model {
   id: string;
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("all");
   const [imgError, setImgError] = useState<{ [key: string]: boolean }>({});
+  
   // Fetch models on component mount
   useEffect(() => {
     const fetchModels = async () => {
@@ -47,19 +49,14 @@ export default function DashboardPage() {
           // Apply saved favorite status to models
           const modelsWithFavorites = result.models.map(model => {
             const thumbnailUrl = model.url.replace('/models/', '/thumbnails/').replace('.glb', '.jpg');
-            console.log(`Model ${model.id} (${model.name})`);
-            console.log(`- Original URL: ${model.url}`);
-            console.log(`- Thumbnail URL: ${thumbnailUrl}`);
             
             return {
               ...model,
               favorite: savedFavorites[model.id] || model.favorite || false,
-              // Convert GLB URL to potential thumbnail URL
               thumbnailUrl
             };
           });
           
-          console.log('All thumbnail URLs:', modelsWithFavorites.map(m => m.thumbnailUrl));
           setModels(modelsWithFavorites);
         }
       } catch (err) {
@@ -108,39 +105,24 @@ export default function DashboardPage() {
 
   const handleImageError = async (modelId: string) => {
     setImgError(prev => ({ ...prev, [modelId]: true }));
-
-    // Find the model that needs a thumbnail
     const model = models.find(m => m.id === modelId);
-    console.log("Generating thumbnail for model:", model);
     if (!model) return;
 
     try {
-      // Create a thumbnail generator
       const thumbnailGenerator = createThumbnailGenerator({
         width: 512,
         height: 512,
-        
       });
-      // Generate thumbnail from the model URL
       const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(model.url);
-      console.log("Thumbnail generated successfully");
-
-      // Upload the thumbnail
       const uploadSuccess = await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, model.id);
+      
       if (uploadSuccess) {
-        console.log("Thumbnail uploaded successfully");
-      } else {
-        console.error("Failed to upload thumbnail");
-      }
-      if (uploadSuccess) {
-        // Update the model in state with the new thumbnail URL and clear error
         setImgError(prev => {
           const newErrors = { ...prev };
           delete newErrors[model.id];
           return newErrors;
         });
 
-        // Force a reload of the image by updating the thumbnailUrl with a cache-busting parameter
         setModels(currentModels =>
           currentModels.map(m =>
             m.id === model.id
@@ -151,169 +133,226 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error generating thumbnail:", error);
-      // Keep the error state so the placeholder remains visible
     }
   };
 
   const handleViewModel = (modelId: string) => {
-    console.log("Viewing model", modelId);
     router.push(`dashboard/models/${modelId}`);
   };
 
   return (
-    <div className="container max-w-screen-xl mx-auto py-8">
-      <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Your 3D Models</h1>
-          <p className="text-muted-foreground">
-            View and manage all your 3D models created with SimpleMesh.
+    <div className="container max-w-screen-xl mx-auto py-12 px-4 sm:px-6">
+      <div className="flex flex-col gap-10">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-400 text-transparent bg-clip-text">
+            Your 3D Models
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your collection of 3D creations in one place
           </p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <Tabs defaultValue="all" value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList>
-              <TabsTrigger value="all">All Models</TabsTrigger>
-              <TabsTrigger value="favorites">Favorites</TabsTrigger>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <Tabs 
+            defaultValue="all" 
+            value={currentTab} 
+            onValueChange={setCurrentTab}
+            className="border-b-0"
+          >
+            <TabsList className="h-11 p-1 bg-background/90 backdrop-blur-sm border">
+              <TabsTrigger value="all" className="text-sm font-medium px-4">
+                All Models
+              </TabsTrigger>
+              <TabsTrigger value="favorites" className="text-sm font-medium px-4">
+                <Star className="h-4 w-4 mr-2" />
+                Favorites
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="relative">
+          
+          <div className="relative w-full sm:w-auto">
             <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
             <Input
               placeholder="Search models..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-[250px]"
+              className="pl-10 w-full sm:w-[280px] h-11 bg-background/90 backdrop-blur-sm border focus-visible:ring-primary"
             />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="border rounded-lg bg-card p-6 text-center min-h-[300px] flex flex-col items-center justify-center">
-            <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
-            <p className="mt-2 text-muted-foreground">Loading your models...</p>
+          <div className="border rounded-xl bg-card/30 backdrop-blur-sm p-12 text-center min-h-[400px] flex flex-col items-center justify-center gap-4">
+            <div className="relative h-14 w-14">
+              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
+              <div className="relative flex items-center justify-center h-full w-full rounded-full bg-background border">
+                <Loader className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            </div>
+            <p className="text-muted-foreground font-medium">Loading your models...</p>
           </div>
         ) : error ? (
-          <div className="border rounded-lg bg-card p-6 text-center min-h-[300px] flex flex-col items-center justify-center">
-            <p className="text-red-500">Error: {error}</p>
-            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          <div className="border border-red-200 rounded-xl bg-red-50 dark:bg-red-950/20 p-12 text-center min-h-[400px] flex flex-col items-center justify-center gap-4">
+            <div className="rounded-full p-4 bg-red-100 dark:bg-red-900/30">
+              <svg className="h-8 w-8 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-red-600 dark:text-red-400 font-medium">Error: {error}</p>
+            <Button variant="outline" className="mt-2" onClick={() => window.location.reload()}>
               Try Again
             </Button>
           </div>
         ) : filteredModels.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredModels.map((model) => (
-              <Card key={model.id} className="overflow-hidden group">
-                <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  {/* Thumbnail instead of 3D Model */}
-                  {imgError[model.id] ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-800 p-4 text-center">
-                      <div className="bg-white  rounded-full p-3 shadow-sm mb-3">
-                        <Grid3X3 className="h-8 w-8 text-primary" />
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          >
+            {filteredModels.map((model, index) => (
+              <motion.div
+                key={model.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <Card className="overflow-hidden group border bg-card/40 backdrop-blur-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-primary/30">
+                  <div className="relative aspect-square bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-950 overflow-hidden">
+                    {imgError[model.id] ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-slate-100/80 to-slate-300/80 dark:from-slate-800/80 dark:to-slate-950/80">
+                        <div className="bg-background rounded-full p-3 shadow-md mb-3 border">
+                          <Grid3X3 className="h-8 w-8 text-primary" />
+                        </div>
+                        <p className="font-medium text-sm mb-1 line-clamp-1">
+                          {model.name}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-[90%]">
+                          Generating preview...
+                        </p>
                       </div>
-                      <p className="font-medium text-sm mb-1 text-slate-800 dark:text-slate-200 line-clamp-1">
-                        {model.name}
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 max-w-[90%]">
-                        Preview image will be available soon
-                      </p>
-                    </div>
-                  ) : (
-                    <img
-                      src={model.thumbnailUrl}
-                      alt={`Thumbnail for ${model.name}`}
-                      className="w-full h-full object-cover"
-                      onError={() => handleImageError(model.id)}
-                    />
-                  )}
+                    ) : (
+                      <div className="w-full h-full relative">
+                        <img
+                          src={model.thumbnailUrl}
+                          alt={`Thumbnail for ${model.name}`}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={() => handleImageError(model.id)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
+                    )}
 
-                  {/* Overlay with actions that appear on hover */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button
-                      onClick={() => handleViewModel(model.id)}
-                      size="icon"
-                      variant="secondary"
-                    >
-                      <Eye className="h-5 w-5" />
-                    </Button>
-                    <Button asChild size="icon" variant="secondary">
-                      <a href={model.url} download>
-                        <Download className="h-5 w-5" />
-                      </a>
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setSelectedModel(model);
-                        setDeleteDialogOpen(true);
-                      }}
-                      size="icon"
-                      variant="destructive"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
-                <CardContent className="p-3 bg-accent">
-                  <div className="flex items-start justify-between">
-                    <div className="truncate mr-2">
-                      <p className="font-medium truncate">{model.name}</p>
+                    {/* Overlay with actions that appear on hover */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-sm">
+                      <Button
+                        onClick={() => handleViewModel(model.id)}
+                        size="icon"
+                        className="rounded-full bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-lg hover:scale-105 transition-all duration-200"
+                      >
+                        <Eye className="h-5 w-5" />
+                      </Button>
+                      <Button 
+                        asChild 
+                        size="icon" 
+                        className="rounded-full bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-lg hover:scale-105 transition-all duration-200"
+                      >
+                        <a href={model.url} download>
+                          <Download className="h-5 w-5" />
+                        </a>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setSelectedModel(model);
+                          setDeleteDialogOpen(true);
+                        }}
+                        size="icon"
+                        className="rounded-full bg-red-500/80 hover:bg-red-500 text-white border-red-400/30 shadow-lg hover:scale-105 transition-all duration-200"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
                     </div>
-                    <Button
-                      onClick={() => handleToggleFavorite(model.id)}
-                      size="icon"
-                      variant="ghost"
-                      className={model.favorite ? "text-yellow-500" : "text-muted-foreground"}
-                    >
-                      <Star className="h-4 w-4" fill={model.favorite ? "currentColor" : "none"} />
-                    </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Created {new Date(model.createdAt).toLocaleDateString()}
-                  </p>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-4 bg-background/80 backdrop-blur-sm">
+                    <div className="flex items-start justify-between">
+                      <div className="truncate mr-2">
+                        <p className="font-semibold truncate text-foreground/90">{model.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(model.createdAt).toLocaleDateString("en-US", { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => handleToggleFavorite(model.id)}
+                        size="icon"
+                        variant="ghost"
+                        className={`rounded-full ${model.favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        <Star className="h-5 w-5" fill={model.favorite ? "currentColor" : "none"} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <div className="border rounded-lg bg-card p-6 text-center min-h-[300px] flex flex-col items-center justify-center gap-3">
-            <div className="rounded-full bg-primary/10 p-3 w-fit">
-              <Grid3X3 className="h-5 w-5 text-primary" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="border rounded-xl bg-card/40 backdrop-blur-sm p-12 text-center min-h-[400px] flex flex-col items-center justify-center gap-4"
+          >
+            <div className="rounded-full bg-primary/10 p-4 mb-2">
+              <Grid3X3 className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-lg font-medium">No models found</h3>
-            <p className="text-muted-foreground max-w-md">
+            <h3 className="text-xl font-semibold">No models found</h3>
+            <p className="text-muted-foreground max-w-md text-base">
               {searchQuery ?
                 `No models matching "${searchQuery}" found. Try a different search term.` :
-                "No 3D models available."}
+                "Create your first 3D model to get started."}
             </p>
-            {searchQuery && (
+            {searchQuery ? (
               <Button
                 variant="outline"
-                className="mt-1"
+                className="mt-3 rounded-full px-5"
                 onClick={() => setSearchQuery("")}
               >
                 Clear search
               </Button>
+            ) : (
+              <Button
+                className="mt-3 rounded-full bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-600 text-white px-5 shadow-md"
+                onClick={() => router.push('/create')}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Create New Model
+              </Button>
             )}
-
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md rounded-xl border-neutral-200 dark:border-neutral-800 shadow-xl">
           <DialogHeader>
-            <DialogTitle>Delete Model</DialogTitle>
+            <DialogTitle className="text-xl">Delete Model</DialogTitle>
           </DialogHeader>
-          <p>
-            Are you sure you want to delete "{selectedModel?.name}"? This action cannot be undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+          <div className="py-3">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete "<span className="font-medium text-foreground">{selectedModel?.name}</span>"? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter className="flex-row gap-3 sm:justify-end">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
+              className="w-full sm:w-auto bg-red-500 hover:bg-red-600"
               onClick={() => selectedModel && handleDeleteModel(selectedModel.id)}
             >
               Delete
