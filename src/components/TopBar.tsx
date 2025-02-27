@@ -25,7 +25,6 @@ export function TopBar({ initialCredits, planType }: TopBarProps) {
                 {/* Left section */}
                 <div className="flex items-center gap-4">
                     <SidebarTrigger className="-ml-2 mr-2" />
-                    <Separator orientation="vertical" className="h-5" />
                 </div>
 
                 {/* Right section */}

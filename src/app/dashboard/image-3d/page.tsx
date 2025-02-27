@@ -1,6 +1,10 @@
 "use client"
 
-import { redirect } from "next/navigation"
+import { useState, useEffect, useRef } from 'react'
+import { useCreditStore } from '@/stores/creditStore'
+import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
+
+// UI Components
 import {
   Sidebar,
   SidebarContent,
@@ -11,53 +15,97 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
+
+// Icons
+import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash } from 'lucide-react'
+
+// Actions
 import { image3D } from "@/components/actions/featuresActions"
-import { useCreditStore } from '@/stores/creditStore'
-import { useState, useEffect } from 'react'
-import { Box, Image, X, RefreshCw, Wand2, Loader } from 'lucide-react'
-
-import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator';
-
 
 export default function Image3D() {
+  // State
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [modelUrl, setModelUrl] = useState<string>()
-  const [seed, setSeed] = useState<number | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const [seed, setSeed] = useState<number | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [startTime, setStartTime] = useState<number | null>(null)
+  const [containerStatus, setContainerStatus] = useState<'unknown' | 'cold' | 'warm'>('unknown')
+  const [elapsedTime, setElapsedTime] = useState<string>('')
+  const [isDragging, setIsDragging] = useState(false)
+  
+  const dropzoneRef = useRef<HTMLDivElement>(null)
   const setCredits = useCreditStore(state => state.setCredits)
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [containerStatus, setContainerStatus] = useState<'unknown' | 'cold' | 'warm'>('unknown');
-  const [elapsedTime, setElapsedTime] = useState<string>('');
+
+  // Track elapsed time during generation
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
+    let intervalId: NodeJS.Timeout | null = null
 
     if (isLoading && startTime) {
-      // Update the elapsed time every second
       intervalId = setInterval(() => {
-        const seconds = Math.floor((Date.now() - startTime) / 1000);
-        setElapsedTime(`(${seconds}s)`);
-      }, 1000);
+        const seconds = Math.floor((Date.now() - startTime) / 1000)
+        setElapsedTime(`${seconds}s`)
+      }, 1000)
     } else {
-      setElapsedTime('');
+      setElapsedTime('')
     }
 
-    // Clean up interval on unmount or when loading stops
     return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isLoading, startTime]);
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [isLoading, startTime])
+
+  // Set up drag and drop event listeners
+  useEffect(() => {
+    const dropzone = dropzoneRef.current
+    if (!dropzone) return
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault()
+      setIsDragging(true)
+    }
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+    }
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      
+      if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+        handleFileUpload(e.dataTransfer.files[0])
+      }
+    }
+
+    dropzone.addEventListener('dragover', handleDragOver)
+    dropzone.addEventListener('dragleave', handleDragLeave)
+    dropzone.addEventListener('drop', handleDrop)
+
+    return () => {
+      dropzone.removeEventListener('dragover', handleDragOver)
+      dropzone.removeEventListener('dragleave', handleDragLeave)
+      dropzone.removeEventListener('drop', handleDrop)
+    }
+  }, [])
+
+  const handleFileUpload = (file: File) => {
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setError('Please select a JPEG or PNG image only')
+      return
+    }
+    
+    setError(null)
+    setSelectedImage(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setSelectedImage(file)
-      // Create preview URL
-      const url = URL.createObjectURL(file)
-      setImagePreview(url)
+      handleFileUpload(e.target.files[0])
     }
   }
 
@@ -72,236 +120,248 @@ export default function Image3D() {
         setError('Please select an image')
         return
       }
-  
-      setIsLoading(true);
-      setStartTime(Date.now());
-      setContainerStatus('unknown');
-      setError(null);
-  
-      // Create a ref to track loading state for the timeout callback
-      const loadingRef = { current: true };
-      
-      // Check container status after 10 seconds
+
+      setIsLoading(true)
+      setStartTime(Date.now())
+      setContainerStatus('unknown')
+      setError(null)
+
+      const loadingRef = { current: true }
+
+      // Check container status after 20 seconds
       const statusTimer = setTimeout(() => {
         if (loadingRef.current) {
-          setContainerStatus('cold');
+          setContainerStatus('cold')
         }
-      }, 20000);
-  
+      }, 20000)
+
       // Convert image to base64
       const reader = new FileReader()
       reader.readAsDataURL(selectedImage)
-  
+
       reader.onload = async () => {
         const base64Image = reader.result as string
-        console.log("seed:", seed)
-  
+
         // If response comes back within 5 seconds, mark container as warm
         const warmTimer = setTimeout(() => {
           if (loadingRef.current) {
-            setContainerStatus('warm');
+            setContainerStatus('warm')
           }
-        }, 5000);
-  
+        }, 5000)
+
         try {
           const result = await image3D({
             image: base64Image,
             seed: seed
           })
-  
-          clearTimeout(statusTimer);
-          clearTimeout(warmTimer);
-  
+
+          clearTimeout(statusTimer)
+          clearTimeout(warmTimer)
+
           if (result?.error) {
             setError(result.error)
             setIsLoading(false)
-            loadingRef.current = false;
+            loadingRef.current = false
             return
           }
 
-        console.log(result)
-        if (result?.updatedCredits) {
-          setCredits(result.updatedCredits)
-          console.log("Updated credits:", result.updatedCredits)
+          if (result?.updatedCredits) {
+            setCredits(result.updatedCredits)
+          }
+
+          if (result.modelUrl && result.modelId) {
+            const urlString = result.modelUrl.toString()
+            setModelUrl(urlString)
+
+            generateAndUploadThumbnail(urlString, result.modelId)
+              .catch(error => {
+                console.error("Error in thumbnail workflow:", error)
+              })
+          } else {
+            setError("No model URL returned")
+          }
+
+          setIsLoading(false)
+          loadingRef.current = false
+        } catch (err) {
+          clearTimeout(statusTimer)
+          clearTimeout(warmTimer)
+          console.error(err)
+          setError('Failed to generate model')
+          setIsLoading(false)
+          loadingRef.current = false
         }
-
-        if (result.modelUrl && result.modelId) {
-          const urlString = result.modelUrl.toString();
-          setModelUrl(urlString);
-          console.log("Model URL:", result.modelUrl);
-        
-          generateAndUploadThumbnail(urlString, result.modelId)
-          .catch(error => {
-            console.error("Error in thumbnail workflow:", error);
-          });
-          console.log("Thumbnail generation started");
-        
-        } else {
-          console.log("No model URL returned", result)
-          setError("No model URL returned")
-        }
-
-        
-
-        setIsLoading(false)
-        loadingRef.current = false;
-      } catch (err) {
-        clearTimeout(statusTimer);
-        clearTimeout(warmTimer);
-        console.error(err)
-        setError('Failed to generate model')
-        setIsLoading(false)
-        loadingRef.current = false;
       }
+    } catch (err) {
+      console.error(err)
+      setError('Failed to generate model')
+      setIsLoading(false)
     }
-  } catch (err) {
-    console.error(err)
-    setError('Failed to generate model')
-    setIsLoading(false)
   }
-}
 
-const generateAndUploadThumbnail = async (modelUrl: string, modelId: string): Promise<void> => {
-  try {
-    console.log("Generating thumbnail for model:", modelUrl);
-    
-    // Extract the model ID from the URL
-    // Assuming the URL format is something like: https://example.com/path/to/modelId.glb
+  const generateAndUploadThumbnail = async (modelUrl: string, modelId: string): Promise<void> => {
+    try {
+      const thumbnailGenerator = createThumbnailGenerator({
+        width: 512,
+        height: 512,
+      })
 
-    
-    // Create a thumbnail generator
-    const thumbnailGenerator = createThumbnailGenerator({
-      width: 512,
-      height: 512,
-      
-    });
-    
-    // Generate the thumbnail
-    const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(modelUrl);
-    console.log("Thumbnail generated successfully");
-    
-    // Upload the thumbnail to S3
-    const uploadSuccess = await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, modelId);
-    
-    if (uploadSuccess) {
-      console.log("Thumbnail uploaded successfully");
-    } else {
-      console.error("Failed to upload thumbnail");
+      const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(modelUrl)
+      await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, modelId)
+    } catch (error) {
+      console.error("Error generating or uploading thumbnail:", error)
     }
-  } catch (error) {
-    console.error("Error generating or uploading thumbnail:", error);
   }
-};
+
   return (
     <div className="flex h-full relative">
-      <Sidebar className="border-t border-r border-b border-border" variant="inset" collapsible="none">
+      <Sidebar className="border-r border-border w-80" variant="inset" collapsible="none">
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xl font-semibold text-primary">Image To 3D</SidebarGroupLabel>
-            <hr className="my-2 border-border" />
+            <SidebarGroupLabel className="text-xl font-semibold text-primary px-4 py-3">
+              Image To 3D
+            </SidebarGroupLabel>
+            <hr className="border-border" />
 
-            <SidebarGroupContent className="p-3 space-y-4">
-              <div>
-                <Label htmlFor="image" className="flex items-center gap-1.5">
+            <SidebarGroupContent className="p-4 space-y-6">
+              {/* Image Upload Section */}
+              <div className="space-y-2">
+                <Label htmlFor="image" className="text-sm font-medium flex items-center gap-1.5">
                   <Image className="h-4 w-4" />
                   Upload Image
                 </Label>
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="mt-1.5"
-                  required
-                />
-                {imagePreview && (
-                  <div className="mt-2 relative">
+                
+                {!imagePreview ? (
+                  <div 
+                    ref={dropzoneRef}
+                    className={`mt-1 flex justify-center rounded-lg border ${isDragging ? 'border-primary bg-primary/5' : 'border-dashed border-border'} p-6 cursor-pointer hover:bg-muted/50 transition-colors`} 
+                    onClick={() => document.getElementById('image')?.click()}
+                  >
+                    <div className="text-center">
+                      <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <div className="mt-2 text-sm text-muted-foreground flex justify-center items-center">
+                        <Label htmlFor="image" className="relative cursor-pointer font-medium text-primary hover:underline">
+                          Upload a file
+                          <Input
+                            id="image"
+                            type="file"
+                            accept="image/jpeg, image/png"
+                            onChange={handleImageChange}
+                            className="sr-only"
+                          />
+                        </Label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">PNG or JPG up to 10MB</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative mt-2 rounded-md overflow-hidden border border-border">
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="max-w-full h-auto rounded"
+                      className="w-full h-auto object-contain"
                     />
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 rounded-full"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-7 w-7 opacity-80 shadow-md"
                       onClick={clearImage}
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
               </div>
 
-              <div>
-                <Label htmlFor="seed" className="flex items-center gap-1.5">
-                  <Box className="h-4 w-4" />
+              {/* Seed Section */}
+              <div className="space-y-2">
+                <Label htmlFor="seed" className="text-sm font-medium flex items-center gap-1.5">
+                  <Hash className="h-4 w-4" />
                   Seed (Optional)
                 </Label>
-                <div className="mt-1.5 flex gap-2">
+                <div className="flex gap-2">
                   <Input
                     id="seed"
                     type="number"
-                    placeholder="Enter number..."
+                    placeholder="Random seed"
                     value={seed === undefined ? '' : seed}
                     onChange={(e) => {
-                      const val = e.target.value === '' ? undefined : parseInt(e.target.value);
-                      setSeed(val);
+                      const val = e.target.value === '' ? undefined : parseInt(e.target.value)
+                      setSeed(val)
                     }}
+                    className="flex-1"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setSeed(Math.floor(Math.random() * 10000))}
                     className="shrink-0"
+                    title="Generate random seed"
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Leave empty for random results</p>
+                <p className="text-xs text-muted-foreground">Leave empty for random results</p>
               </div>
 
+              {/* Generate Button */}
               <Button
-                className="w-full"
+                className="w-full h-10 mt-4"
+                size="lg"
                 onClick={handleGenerate}
                 disabled={!selectedImage || isLoading}
               >
                 {isLoading ? (
                   <>
                     <Loader className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    Generating Model...
                   </>
                 ) : (
                   <>
                     <Wand2 className="h-4 w-4 mr-2" />
-                    Generate Model
+                    Generate 3D Model
                   </>
                 )}
               </Button>
 
+              {/* Error Display */}
               {error && (
-                <p className="text-red-500 text-sm">{error}</p>
+                <div className="text-destructive bg-destructive/10 p-3 rounded-md text-sm">
+                  {error}
+                </div>
               )}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
-      <main className="flex-1 bg-muted/50 overflow-hidden relative">
+
+      {/* Main Content Area */}
+      <main className="flex-1 bg-muted/30 overflow-hidden relative">
         <ModelViewer modelUrl={modelUrl} />
 
+        {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-10">
-            <div className="bg-background p-6 rounded-lg shadow-lg text-center">
-              <Loader className="h-10 w-10 animate-spin mx-auto text-primary" />
-              <h3 className="text-xl font-semibold mt-4">Generating 3D Model {elapsedTime}</h3>
-
-              {containerStatus === 'unknown' && (
-                <p className="text-muted-foreground mt-2">Please wait...</p>
-              )}
-
-
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="bg-card/40 p-8 rounded-xl shadow-lg text-center max-w-sm mx-auto border border-border">
+              <div className="relative">
+                <div className="size-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+                <Loader className="h-8 w-8 absolute inset-0 m-auto text-primary" />
+              </div>
+              
+              <h3 className="text-xl font-semibold mt-6 mb-2">Generating 3D Model</h3>
+              
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <span className="inline-block px-2 py-1 bg-muted rounded text-sm font-mono">
+                  {elapsedTime || "0s"}
+                </span>
+                <span className="text-sm">elapsed</span>
+              </div>
+              
               {containerStatus === 'cold' && (
-                <p className="text-muted-foreground mt-2">Container is cold booting. This may take up to 5 minutes.</p>
+                <p className="text-muted-foreground mt-4 text-sm">
+                  Your model is in queue. This may take up to 5 minutes.
+                </p>
               )}
             </div>
           </div>
