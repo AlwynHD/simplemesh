@@ -315,22 +315,7 @@ export default function DashboardPage() {
                 `No models matching "${searchQuery}" found. Try a different search term.` :
                 "Create your first 3D model to get started."}
             </p>
-            {searchQuery ? (
-              <Button
-                variant="outline"
-                className="mt-3 rounded-full px-5"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </Button>
-            ) : (
-              <Button
-                className="mt-3 rounded-full bg-gradient-to-r from-primary to-violet-500 hover:from-primary/90 hover:to-violet-600 text-white px-5 shadow-md"
-                onClick={() => router.push('/create')}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Create New Model
-              </Button>
-            )}
+
           </motion.div>
         )}
       </div>
@@ -343,7 +328,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="py-3">
             <p className="text-muted-foreground">
-              Are you sure you want to delete "<span className="font-medium text-foreground">{selectedModel?.name}</span>"? This action cannot be undone.
+              Are you sure you want to delete"<span className="font-medium text-foreground">{selectedModel?.name}</span>"? This action cannot be undone.
             </p>
           </div>
           <DialogFooter className="flex-row gap-3 sm:justify-end">
