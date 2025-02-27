@@ -173,7 +173,7 @@ const generateAndUploadThumbnail = async (modelUrl: string, modelId: string): Pr
     const thumbnailGenerator = createThumbnailGenerator({
       width: 512,
       height: 512,
-      backgroundColor: '#f0f0f0',
+      
     });
     
     // Generate the thumbnail

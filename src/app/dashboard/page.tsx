@@ -119,7 +119,7 @@ export default function DashboardPage() {
       const thumbnailGenerator = createThumbnailGenerator({
         width: 512,
         height: 512,
-        backgroundColor: '#f0f0f0',
+        
       });
       // Generate thumbnail from the model URL
       const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(model.url);
@@ -207,8 +207,8 @@ export default function DashboardPage() {
                 <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
                   {/* Thumbnail instead of 3D Model */}
                   {imgError[model.id] ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 p-4 text-center">
-                      <div className="bg-white dark:bg-slate-600 rounded-full p-3 shadow-sm mb-3">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-800 p-4 text-center">
+                      <div className="bg-white  rounded-full p-3 shadow-sm mb-3">
                         <Grid3X3 className="h-8 w-8 text-primary" />
                       </div>
                       <p className="font-medium text-sm mb-1 text-slate-800 dark:text-slate-200 line-clamp-1">
@@ -253,7 +253,7 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </div>
-                <CardContent className="p-3">
+                <CardContent className="p-3 bg-accent">
                   <div className="flex items-start justify-between">
                     <div className="truncate mr-2">
                       <p className="font-medium truncate">{model.name}</p>
@@ -294,11 +294,7 @@ export default function DashboardPage() {
                 Clear search
               </Button>
             )}
-            {!searchQuery && (
-              <Link href="/create" passHref>
-                <Button className="mt-2">Create Your First Model</Button>
-              </Link>
-            )}
+
           </div>
         )}
       </div>
