@@ -71,7 +71,7 @@ const initialState: ModelViewerState = {
   contrast: 1,
   roughness: 0.5,
   metalness: 0.5,
-  scale: 5,
+  scale: 3,
   rotation: 0,
   color: "#ffffff",
   ambientIntensity: 0.5,  // Reduced default ambient light
