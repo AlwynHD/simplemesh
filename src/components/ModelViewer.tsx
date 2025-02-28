@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/popover"
 // Import HexColorPicker from react-colorful
 import { HexColorPicker, HexColorInput } from "react-colorful"
-
-// Remove preloading of default model since we don't want a default model
+import { ModelTopology } from "@/components/ModelTopology";
+import { Switch } from "@/components/ui/switch"; // Import Switch component
 
 // Valid environment options for Stage
 type EnvironmentType = "lobby" | "apartment" | "city" | "dawn" | "forest" | "night" | "park" | "studio" | "sunset" | "warehouse";
@@ -46,6 +46,8 @@ type ModelViewerState = {
   stageIntensity: number;
   environment: EnvironmentType;
   showControls: boolean;
+  textureEnabled: boolean; // New state for texture toggle
+  wireframeEnabled: boolean; // New state for wireframe toggle
 }
 
 type ModelViewerAction = 
@@ -60,6 +62,8 @@ type ModelViewerAction =
   | { type: 'SET_STAGE_INTENSITY', value: number }
   | { type: 'SET_ENVIRONMENT', value: EnvironmentType }
   | { type: 'TOGGLE_CONTROLS' }
+  | { type: 'TOGGLE_TEXTURE', value: boolean } // New action
+  | { type: 'TOGGLE_WIREFRAME', value: boolean } // New action
   | { type: 'RESET' };
 
 const initialState: ModelViewerState = {
@@ -73,7 +77,9 @@ const initialState: ModelViewerState = {
   ambientIntensity: 0.5,  // Reduced default ambient light
   stageIntensity: 0.8,    // Increased default stage intensity
   environment: "apartment",
-  showControls: true
+  showControls: true,
+  textureEnabled: true, // Default to showing textures
+  wireframeEnabled: false // Default to not showing wireframe
 };
 
 // Predefined color palette - useful material colors
@@ -128,6 +134,10 @@ function modelViewerReducer(state: ModelViewerState, action: ModelViewerAction):
       return { ...state, environment: action.value };
     case 'TOGGLE_CONTROLS':
       return { ...state, showControls: !state.showControls };
+    case 'TOGGLE_TEXTURE':
+      return { ...state, textureEnabled: action.value };
+    case 'TOGGLE_WIREFRAME':
+      return { ...state, wireframeEnabled: action.value };
     case 'RESET':
       return initialState;
     default:
@@ -211,6 +221,8 @@ interface ModelProps {
   metalness?: number
   color?: string
   rotation?: number
+  textureEnabled?: boolean // New prop
+  wireframeEnabled?: boolean // New prop
 }
 
 // Loading indicator
@@ -267,7 +279,9 @@ function Model({
   roughness = 0.5,
   metalness = 0.5,
   color = "#ffffff",
-  rotation = 0
+  rotation = 0,
+  textureEnabled = true,
+  wireframeEnabled = false
 }: ModelProps) {
   const { scene } = useGLTF(url, true) // Enable draco decompression if available
   const modelRef = useRef<THREE.Object3D>()
@@ -281,12 +295,14 @@ function Model({
     }
   }, [scene, scale, position, rotation])
 
-  // Apply material properties only when they change
+  // Apply material properties and toggle settings
   useEffect(() => {
     if (!scene) return
     
     // Store original materials to restore on unmount
     const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>()
+    // Store original maps to restore when texture is toggled
+    const originalMaps = new Map<THREE.Material, THREE.Texture | null>()
     
     scene.traverse((node: THREE.Object3D) => {
       if ((node as THREE.Mesh).isMesh) {
@@ -298,12 +314,22 @@ function Model({
           if (Array.isArray(mesh.material)) {
             mesh.material = mesh.material.map((mat: THREE.Material) => {
               const newMat = mat.clone()
-              applyMaterialProperties(newMat, brightness, contrast, roughness, metalness, color)
+              // Store original maps
+              if ((newMat as THREE.MeshStandardMaterial).map) {
+                originalMaps.set(newMat, (newMat as THREE.MeshStandardMaterial).map)
+              }
+              
+              applyMaterialProperties(newMat, brightness, contrast, roughness, metalness, color, textureEnabled, wireframeEnabled)
               return newMat
             })
           } else {
             mesh.material = mesh.material.clone()
-            applyMaterialProperties(mesh.material, brightness, contrast, roughness, metalness, color)
+            // Store original map
+            if ((mesh.material as THREE.MeshStandardMaterial).map) {
+              originalMaps.set(mesh.material, (mesh.material as THREE.MeshStandardMaterial).map)
+            }
+            
+            applyMaterialProperties(mesh.material, brightness, contrast, roughness, metalness, color, textureEnabled, wireframeEnabled)
           }
         }
       }
@@ -315,7 +341,7 @@ function Model({
         mesh.material = material
       })
     }
-  }, [scene, brightness, contrast, roughness, metalness, color])
+  }, [scene, brightness, contrast, roughness, metalness, color, textureEnabled, wireframeEnabled])
 
   return <primitive ref={modelRef} object={scene} />
 }
@@ -326,8 +352,51 @@ function applyMaterialProperties(
   contrast: number, 
   roughness: number, 
   metalness: number, 
-  color: string
+  color: string,
+  textureEnabled: boolean,
+  wireframeEnabled: boolean
 ): void {
+  // Set wireframe property
+  if ('wireframe' in material) {
+    (material as THREE.MeshBasicMaterial | THREE.MeshLambertMaterial | 
+     THREE.MeshPhongMaterial | THREE.MeshStandardMaterial | 
+     THREE.MeshPhysicalMaterial).wireframe = wireframeEnabled;
+  }
+  
+  // Handle textures
+  if (!textureEnabled) {
+    // Disable all texture maps
+    if ('map' in material && material.map) {
+      (material as THREE.MeshStandardMaterial).map = null;
+    }
+    if ('normalMap' in material && (material as THREE.MeshStandardMaterial).normalMap) {
+      (material as THREE.MeshStandardMaterial).normalMap = null;
+    }
+    if ('roughnessMap' in material && (material as THREE.MeshStandardMaterial).roughnessMap) {
+      (material as THREE.MeshStandardMaterial).roughnessMap = null;
+    }
+    if ('metalnessMap' in material && (material as THREE.MeshStandardMaterial).metalnessMap) {
+      (material as THREE.MeshStandardMaterial).metalnessMap = null;
+    }
+    if ('aoMap' in material && (material as THREE.MeshStandardMaterial).aoMap) {
+      (material as THREE.MeshStandardMaterial).aoMap = null;
+    }
+    if ('emissiveMap' in material && (material as THREE.MeshStandardMaterial).emissiveMap) {
+      (material as THREE.MeshStandardMaterial).emissiveMap = null;
+    }
+    if ('bumpMap' in material && (material as THREE.MeshStandardMaterial).bumpMap) {
+      (material as THREE.MeshStandardMaterial).bumpMap = null;
+    }
+    if ('displacementMap' in material && (material as THREE.MeshStandardMaterial).displacementMap) {
+      (material as THREE.MeshStandardMaterial).displacementMap = null;
+    }
+    if ('lightMap' in material && (material as THREE.MeshStandardMaterial).lightMap) {
+      (material as THREE.MeshStandardMaterial).lightMap = null;
+    }
+    // Force material update
+    material.needsUpdate = true;
+  }
+
   // Improved brightness handling for better visual appearance
   if ('color' in material && material.color instanceof THREE.Color) {
     // Apply base color with user's color choice
@@ -388,11 +457,14 @@ interface ModelViewerProps {
 
 export default function ModelViewer({ modelUrl }: ModelViewerProps) {
   const [state, dispatch] = useReducer(modelViewerReducer, initialState);
-  
+  const [showTopology] = useState<boolean>(true); // Add this state
+
   // Define handlers for UI interactions
   const handleReset = () => dispatch({ type: 'RESET' });
   const toggleControls = () => dispatch({ type: 'TOGGLE_CONTROLS' });
   const handleColorChange = (color: string) => dispatch({ type: 'SET_COLOR', value: color });
+  const handleTextureToggle = (checked: boolean) => dispatch({ type: 'TOGGLE_TEXTURE', value: checked });
+  const handleWireframeToggle = (checked: boolean) => dispatch({ type: 'TOGGLE_WIREFRAME', value: checked });
 
   return (
     <div className="w-full h-full relative">
@@ -444,6 +516,8 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
                     metalness={state.metalness}
                     color={state.color}
                     rotation={state.rotation}
+                    textureEnabled={state.textureEnabled}
+                    wireframeEnabled={state.wireframeEnabled}
                   />
                 )}
               </Stage>
@@ -462,7 +536,12 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
           </Canvas>
         </div>
       </ErrorBoundary>
-      
+
+
+      {modelUrl && <ModelTopology url={modelUrl} visible={showTopology} />} {/* Shows Model Information */}
+
+
+
       {state.showControls && (
         <Card className="absolute top-4 right-4 w-64 bg-popover text-popover-foreground border-border shadow-xl rounded-[var(--radius)]">
           <div className="flex justify-between items-center p-2 border-b border-border">
@@ -584,6 +663,31 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
               </TabsContent>
               
               <TabsContent value="material" className="space-y-3 mt-3">
+                {/* Added Toggle switches for texture and wireframe */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="texture-toggle" className="text-xs text-muted-foreground">
+                      Show Textures
+                    </Label>
+                    <Switch
+                      id="texture-toggle"
+                      checked={state.textureEnabled}
+                      onCheckedChange={handleTextureToggle}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="wireframe-toggle" className="text-xs text-muted-foreground">
+                      Show Wireframe
+                    </Label>
+                    <Switch
+                      id="wireframe-toggle"
+                      checked={state.wireframeEnabled}
+                      onCheckedChange={handleWireframeToggle}
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <Label className="text-xs text-muted-foreground">Roughness</Label>
@@ -617,7 +721,7 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <Label className="text-xs text-muted-foreground">Color Tint</Label>
-                  </div>
+                    </div>
                   {/* Improved color picker using react-colorful */}
                   <ColorPickerPopover 
                     color={state.color} 
