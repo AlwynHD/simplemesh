@@ -147,7 +147,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
 export async function text3D(input: { prompt: string, seed?: number, credits: number }): Promise<{ updatedCredits?: number; modelUrl?: string; modelId?: string; error?: string }> {
   try {
     const supabase = createClientServer()
-    const cost = 35
+    const cost = 40
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { error: 'User not authenticated' }
@@ -279,32 +279,6 @@ export async function text3D(input: { prompt: string, seed?: number, credits: nu
     console.error('Error in Text3D:', err);
     return { error: 'Something went wrong' }
   }
-  // const replicate = new Replicate({
-  //   auth: process.env.REPLICATE_API_TOKEN!,
-  //   useFileOutput: false,
-  // })
-
-  // interface PredictOutput {
-  //   image: string
-  // }
-
-  // const output = await replicate.run(
-  //   "black-forest-labs/flux-dev",
-  //   {
-  //     input: {
-  //       prompt: input.prompt,
-  //       go_fast: true,
-  //       guidance: 3.5,
-  //       megapixels: "1",
-  //       num_outputs: 1,
-  //       aspect_ratio: "1:1",
-  //       output_format: "jpg",
-  //       output_quality: 80,
-  //       prompt_strength: 0.8,
-  //       num_inference_steps: 28,
-  //     }
-  //   }
-  // ) as PredictOutput;
 
 
 }
