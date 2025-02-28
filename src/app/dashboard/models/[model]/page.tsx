@@ -81,23 +81,14 @@ export default function ModelPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">{model?.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Created: {model?.createdAt ? new Date(model.createdAt).toLocaleString() : 'Unknown'}
-        </p>
-      </div>
-      
-      <div className="aspect-square w-full bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
-        {model?.url ? (
-          <ModelViewer modelUrl={model.url} />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p>No model preview available</p>
-          </div>
-        )}
-      </div>
+    <div className="flex h-full relative">
+      {model?.url ? (
+        <ModelViewer modelUrl={model.url} />
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p>No model preview available</p>
+        </div>
+      )}
     </div>
   );
 }
