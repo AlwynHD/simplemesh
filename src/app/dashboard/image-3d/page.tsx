@@ -152,7 +152,7 @@ export default function Image3D() {
         try {
           const result = await image3D({
             image: base64Image,
-            seed: seed
+            seed: seed,
           })
 
           clearTimeout(statusTimer)
