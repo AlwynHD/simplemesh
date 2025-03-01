@@ -1,114 +1,121 @@
-"use client";
+"use client"
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { storeModelMetadata } from "@/components/actions/featuresActions";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { textureGeneration } from "@/components/actions/featuresActions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-export default function MetadataGeneratorTest() {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Sample data - in a real app these would come from context or params
-  const sampleUserId = "7ad2e627-da52-4f81-862d-cd5f0efd1edf";
-  const sampleModelId = "sample-model-457";
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setImageFile(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+export default function TextureGenerationTest() {
+  const [file, setFile] = useState<File | null>(null);
+  const [prompt, setPrompt] = useState<string>("");
+  const [pipelineType, setPipelineType] = useState<"stage1" | "UV_only">("stage1");
+  const [seed, setSeed] = useState<number>(40);
+  const [result, setResult] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!imageFile || !imagePreview) {
-      setError("Please select an image");
+    if (!file) {
+      setError("Please select a 3D mesh file (.obj)");
       return;
     }
+
+    setLoading(true);
+    setError("");
+    setResult("");
     
     try {
-      setIsLoading(true);
-      setError(null);
+      const formData = new FormData();
       
-      // Call the server action with the base64 image data
-      await storeModelMetadata(
-        sampleUserId,
-        sampleModelId,
-        imagePreview
-      );
+      if (file) {
+        formData.append('mesh', file);
+      }
       
-      setResult("Metadata successfully generated and stored!");
-    } catch (err) {
-      console.error("Error storing metadata:", err);
-      setError(`Failed to store metadata: ${err instanceof Error ? err.message : String(err)}`);
+      if (prompt) {
+        formData.append('prompt', prompt);
+      }
+      
+      formData.append('pipeline_type', pipelineType);
+      
+      if (seed !== undefined) {
+        formData.append('seed', seed.toString());
+      }
+      
+      const response = await textureGeneration(formData);
+      
+      setResult("Texture generated successfully! Result: " + JSON.stringify(response));
+    } catch (err: any) {
+      setError(err.message || "Failed to generate texture");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Image Metadata Generator</h1>
-      
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Upload Image for Metadata Generation</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="image-upload">Upload an image</Label>
+    <div className="container py-10">
+      <Card className="max-w-xl mx-auto">
+        <CardHeader>
+          <CardTitle>Texture Generation Test</CardTitle>
+          <CardDescription>
+            Upload a 3D mesh (.obj file) and generate textures using AI
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mesh">3D Mesh File (.obj)</Label>
               <Input 
-                id="image-upload" 
+                id="mesh" 
                 type="file" 
-                accept="image/*" 
-                onChange={handleImageChange}
-                className="mt-2"
+                accept=".obj"
+                onChange={(e) => setFile(e.target.files?.[0] || null)} 
+              />
+              {file && <p className="text-sm text-green-600">File selected: {file.name}</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="prompt">Texture Prompt</Label>
+              <Textarea
+                id="prompt"
+                placeholder="Sci-Fi digital painting, colorful, high quality"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
               />
             </div>
             
-            {imagePreview && (
-              <div className="mt-4">
-                <h3 className="text-lg font-medium mb-2">Image Preview</h3>
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="max-h-64 rounded-md border border-gray-200"
-                />
-              </div>
-            )}
-            
-            <div className="pt-2">
-              <Button 
-                type="submit" 
-                disabled={isLoading || !imageFile}
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating metadata...
-                  </>
-                ) : (
-                  "Generate Metadata"
-                )}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="pipeline">Pipeline Type</Label>
+              <Select value={pipelineType} onValueChange={(value) => setPipelineType(value as "stage1" | "UV_only")}>
+                <SelectTrigger id="pipeline">
+                  <SelectValue placeholder="Select pipeline type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="stage1">Stage 1</SelectItem>
+                  <SelectItem value="UV_only">UV Only</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="seed">Random Seed</Label>
+              <Input
+                id="seed"
+                type="number"
+                value={seed}
+                onChange={(e) => setSeed(parseInt(e.target.value))}
+              />
+            </div>
+            
+            <Button type="submit" disabled={loading}>
+              {loading ? "Generating..." : "Generate Texture"}
+            </Button>
           </form>
           
           {error && (
@@ -124,9 +131,8 @@ export default function MetadataGeneratorTest() {
           )}
           
           <div className="mt-4 text-sm text-gray-500">
-            <p>Using sample data:</p>
-            <p>User ID: {sampleUserId}</p>
-            <p>Model ID: {sampleModelId}</p>
+            <p className="font-medium">Note:</p>
+            <p>This process may take several minutes to complete, depending on the complexity of your mesh and the requested texture.</p>
           </div>
         </CardContent>
       </Card>
