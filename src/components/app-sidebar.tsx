@@ -63,7 +63,7 @@ const data = {
     },
     {
       title: "Texture Generation",
-      url: "#",
+      url: "/dashboard/texture-generation",
       icon: Grid,
     }
 
