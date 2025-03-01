@@ -509,7 +509,7 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
                   <Model 
                     url={modelUrl} 
                     scale={[state.scale, state.scale, state.scale]} 
-                    position={[0, 3, 0]}
+                    position={[0, 2, 0]}
                     brightness={state.brightness}
                     contrast={state.contrast}
                     roughness={state.roughness}
