@@ -1,19 +1,17 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Eye, Download, Trash2, Search, Star, Grid3X3, Loader, Square, Plus } from "lucide-react"
+import { Eye, Download, Trash2, Search, Star, Grid3X3, Loader, } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { listUserModels } from "@/components/actions/featuresActions"
-import Image from "next/image"
+import { listUserModels, deleteModel } from "@/components/actions/featuresActions"
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator';
 import { motion } from "framer-motion";
-
+import Image from "next/image"
 interface Model {
   id: string;
   name: string;
@@ -33,7 +31,7 @@ export default function DashboardPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("all");
   const [imgError, setImgError] = useState<{ [key: string]: boolean }>({});
-  
+
   // Fetch models on component mount
   useEffect(() => {
     const fetchModels = async () => {
@@ -49,14 +47,14 @@ export default function DashboardPage() {
           // Apply saved favorite status to models
           const modelsWithFavorites = result.models.map(model => {
             const thumbnailUrl = model.url.replace('/models/', '/thumbnails/').replace('.glb', '.jpg');
-            
+
             return {
               ...model,
               favorite: savedFavorites[model.id] || model.favorite || false,
               thumbnailUrl
             };
           });
-          
+
           setModels(modelsWithFavorites);
         }
       } catch (err) {
@@ -81,6 +79,7 @@ export default function DashboardPage() {
   });
 
   const handleDeleteModel = (modelId: string) => {
+    deleteModel(modelId)
     setModels(models.filter(model => model.id !== modelId));
     setDeleteDialogOpen(false);
     // In a real implementation, you would call a server action to delete from S3
@@ -115,7 +114,7 @@ export default function DashboardPage() {
       });
       const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(model.url);
       const uploadSuccess = await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, model.id);
-      
+
       if (uploadSuccess) {
         setImgError(prev => {
           const newErrors = { ...prev };
@@ -153,9 +152,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <Tabs 
-            defaultValue="all" 
-            value={currentTab} 
+          <Tabs
+            defaultValue="all"
+            value={currentTab}
             onValueChange={setCurrentTab}
             className="border-b-0"
           >
@@ -169,7 +168,7 @@ export default function DashboardPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          
+
           <div className="relative w-full sm:w-auto">
             <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
             <Input
@@ -204,9 +203,9 @@ export default function DashboardPage() {
             </Button>
           </div>
         ) : filteredModels.length > 0 ? (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
           >
@@ -233,11 +232,14 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className="w-full h-full relative">
-                        <img
-                          src={model.thumbnailUrl}
+                        <Image
+                          src={model.thumbnailUrl || '/placeholder-image.jpg'} // Provide fallback image
                           alt={`Thumbnail for ${model.name}`}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                           onError={() => handleImageError(model.id)}
+                          priority={index < 4}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
@@ -252,9 +254,9 @@ export default function DashboardPage() {
                       >
                         <Eye className="h-5 w-5" />
                       </Button>
-                      <Button 
-                        asChild 
-                        size="icon" 
+                      <Button
+                        asChild
+                        size="icon"
                         className="rounded-full bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-lg hover:scale-105 transition-all duration-200"
                       >
                         <a href={model.url} download>
@@ -278,10 +280,10 @@ export default function DashboardPage() {
                       <div className="truncate mr-2">
                         <p className="font-semibold truncate text-foreground/90">{model.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(model.createdAt).toLocaleDateString("en-US", { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric' 
+                          {new Date(model.createdAt).toLocaleDateString("en-US", {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
                           })}
                         </p>
                       </div>
@@ -328,7 +330,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="py-3">
             <p className="text-muted-foreground">
-              Are you sure you want to delete"<span className="font-medium text-foreground">{selectedModel?.name}</span>"? This action cannot be undone.
+              Are you sure you want to delete&quot;<span className="font-medium text-foreground">{selectedModel?.name}</span>&quot;? This action cannot be undone.
             </p>
           </div>
           <DialogFooter className="flex-row gap-3 sm:justify-end">

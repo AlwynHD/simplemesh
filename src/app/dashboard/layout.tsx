@@ -2,28 +2,17 @@
 
 
 import { AppSidebar } from "@/components/app-sidebar"
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+
 import {
     SidebarInset,
     SidebarProvider,
-    SidebarTrigger,
+   
 } from "@/components/ui/sidebar"
 import { createClientServer } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import { CreditCard } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { NavUser } from "@/components/nav-user"
+
 
 import { getUserBilling, getUserPlan } from "@/components/actions/billingActions"
-import { useCreditStore } from "@/stores/creditStore"
 import { TopBar } from "@/components/TopBar"
 export default async function DashboardLayout({
     children,

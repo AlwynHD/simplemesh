@@ -448,6 +448,82 @@ export async function uploadThumbnail(formData: FormData): Promise<{ success: bo
 }
 
 
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+
+export async function deleteModel(modelId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createClientServer();
+
+    const { data, error: authError } = await supabase.auth.getUser();
+    if (authError || !data?.user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+    const userId = data.user.id;
+
+    // 1. Delete the model file
+    const modelKey = `users/${userId}/models/${modelId}.glb`;
+    const deleteModelCommand = new DeleteObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: modelKey
+    });
+    await s3Client.send(deleteModelCommand);
+
+    // 2. Delete the thumbnail file if it exists
+    try {
+      const thumbnailKey = `users/${userId}/thumbnails/${modelId}.jpg`;
+      const deleteThumbnailCommand = new DeleteObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME!,
+        Key: thumbnailKey
+      });
+      await s3Client.send(deleteThumbnailCommand);
+    } catch (thumbnailError) {
+      // Thumbnail might not exist, continue with deletion
+      console.log('Thumbnail may not exist or other error:', thumbnailError);
+    }
+
+    // 3. Update metadata.json to remove the model
+    const metadataKey = `users/${userId}/metadata.json`;
+
+    try {
+      // Fetch current metadata
+      const getCommand = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME!,
+        Key: metadataKey
+      });
+
+      const response = await s3Client.send(getCommand);
+      const bodyContents = await response.Body?.transformToString();
+      
+      if (bodyContents) {
+        const metadata = JSON.parse(bodyContents);
+        
+        // Delete the entry for this model
+        if (metadata[modelId]) {
+          delete metadata[modelId];
+        }
+        
+        // Upload updated metadata
+        const updateMetadataCommand = new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME!,
+          Key: metadataKey,
+          Body: JSON.stringify(metadata, null, 2),
+          ContentType: 'application/json'
+        });
+        
+        await s3Client.send(updateMetadataCommand);
+      }
+    } catch (metadataError) {
+      console.error('Error updating metadata:', metadataError);
+      // Continue with deletion even if metadata update fails
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Error deleting model:', err);
+    return { success: false, error: 'Failed to delete model' };
+  }
+}
+
 export async function storeModelMetadata(
   userId: string,
   modelId: string,
