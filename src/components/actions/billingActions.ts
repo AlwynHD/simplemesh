@@ -1,9 +1,9 @@
 'use server'
 
 import { createClient } from "@supabase/supabase-js"
-import { cookies } from 'next/headers'
 import { createClientServer } from "@/utils/supabase/server"
 import { stripe } from '@/lib/stripe'
+
 type BillingResponse = {
     credits: number
     error?: string
@@ -62,7 +62,7 @@ type PlanResponse = {
 export async function getUserPlan(): Promise<PlanResponse> {
     try {
         const supabase = createClientServer()
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY!);
+        const stripeD = stripe
 
         const { data, error: authError } = await supabase.auth.getUser();
 
@@ -92,10 +92,10 @@ export async function getUserPlan(): Promise<PlanResponse> {
         }
 
         // Get customer's subscriptions
-        const subscriptions = await stripe.subscriptions.list({
+        const subscriptions = await stripeD.subscriptions.list({
             customer: userData.stripe_customer_id,
             status: 'active',
-            expand: ['data.plan.product']
+            expand: ['data']
         });
 
         if (!subscriptions.data.length) {
@@ -105,15 +105,15 @@ export async function getUserPlan(): Promise<PlanResponse> {
         }
 
         // Get the product nickname from the first active subscription
-        const planNickname = subscriptions.data[0].plan.product.name;
+        const planNickname = subscriptions.data[0].items.data[0].plan.metadata!.nickname;
 
         return {
-            plan: planNickname
+            plan: planNickname || 'Free Plan'
         }
     } catch (error) {
         return {
             plan: 'Free Plan',
-            error: 'Error fetching plan details'
+            error: 'Error fetching plan details' + error
         }
     }
 }

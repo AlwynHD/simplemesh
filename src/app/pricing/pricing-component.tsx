@@ -9,8 +9,7 @@ import { SmoothToggle } from "./components/smooth-toggle"
 import { checkUserAuth } from "./components/isUser"
 import Modal from '@/components/modal'
 import { LoginWithLogo } from '@/components/login-components/login-with-logo'
-import { useRouter } from 'next/navigation'
-import useUserData from '@/hooks/use-userData'
+
 
 interface Plan {
     name: string
@@ -53,8 +52,7 @@ const plans: Plan[] = [
 ]
 
 export default function PricingComponent() {
-    const router = useRouter()
-    const { user } = useUserData();
+
 
     const [isYearly, setIsYearly] = useState(false)
 

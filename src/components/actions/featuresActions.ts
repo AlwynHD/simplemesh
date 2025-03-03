@@ -284,7 +284,6 @@ export async function text3D(input: { prompt: string, seed?: number, credits: nu
 }
 
 import { ListObjectsV2Command } from '@aws-sdk/client-s3'
-import { text } from 'stream/consumers'
 
 export async function listUserModels(): Promise<{ models: Array<{ id: string, name: string, url: string, createdAt: string, favorite: boolean }> | null; error?: string }> {
   try {
@@ -392,7 +391,7 @@ export async function getModelById(modelId: string): Promise<{ model: { id: stri
       };
     } catch (error) {
       // Object doesn't exist or user doesn't have access
-      return { model: null, error: 'Access denied' };
+      return { model: null, error: 'Access denied' + error };
     }
   } catch (err) {
     console.error('Error getting model:', err);
@@ -576,7 +575,7 @@ export async function storeModelMetadata(
   const metadataKey = `users/${userId}/metadata.json`;
 
   // First try to get existing metadata if it exists
-  let existingMetadata: Record<string, any> = {};
+  let existingMetadata: Record<string, { id: string, description: string }> = {};
   try {
     const getCommand = new GetObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME!,
@@ -590,7 +589,7 @@ export async function storeModelMetadata(
     }
   } catch (error) {
     // File doesn't exist yet, we'll create it
-    console.log('Creating new metadata file');
+    console.log('Creating new metadata file' + error);
   }
 
   // Add the new model to metadata
