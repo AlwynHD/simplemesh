@@ -536,32 +536,3 @@ export async function storeModelMetadata(
 
 
 
-export async function textureGeneration(formData: FormData) {
-  // Extract data from FormData
-  const mesh = formData.get('mesh') as File | Blob;
-  const prompt = formData.get('prompt') as string | undefined;
-  const pipelineType = formData.get('pipeline_type') as "stage1" | "UV_only" | undefined;
-  const seedValue = formData.get('seed');
-  const seed = seedValue ? parseInt(seedValue as string) : undefined;
-
-  const replicate = new Replicate({
-    auth: process.env.REPLICATE_API_TOKEN!,
-    useFileOutput: false,
-  })
-  type PredictImageOutput = any[];
-
-  const outputImage = await replicate.run(
-    "alwynhd/paint3d:f3a6caa174598f564c540371ffee30a4aeacb3013c5a02b34eae0f0fc985b356",
-    {
-      input: {
-        mesh: mesh,
-        prompt: prompt || "Sci-Fi digital painting, colorful, high quality",
-        pipeline_type: pipelineType || "stage1",
-        seed: seed || 40
-      }
-    }
-  ) as PredictImageOutput;
-
-  console.log(outputImage)
-  return outputImage;
-}
