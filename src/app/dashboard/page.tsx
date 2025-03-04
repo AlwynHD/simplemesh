@@ -82,7 +82,6 @@ export default function DashboardPage() {
     deleteModel(modelId)
     setModels(models.filter(model => model.id !== modelId));
     setDeleteDialogOpen(false);
-    // In a real implementation, you would call a server action to delete from S3
   };
 
   const handleToggleFavorite = (modelId: string) => {

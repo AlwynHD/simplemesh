@@ -492,15 +492,15 @@ export async function deleteModel(modelId: string): Promise<{ success: boolean; 
 
       const response = await s3Client.send(getCommand);
       const bodyContents = await response.Body?.transformToString();
-      
+
       if (bodyContents) {
         const metadata = JSON.parse(bodyContents);
-        
+
         // Delete the entry for this model
         if (metadata[modelId]) {
           delete metadata[modelId];
         }
-        
+
         // Upload updated metadata
         const updateMetadataCommand = new PutObjectCommand({
           Bucket: process.env.S3_BUCKET_NAME!,
@@ -508,7 +508,7 @@ export async function deleteModel(modelId: string): Promise<{ success: boolean; 
           Body: JSON.stringify(metadata, null, 2),
           ContentType: 'application/json'
         });
-        
+
         await s3Client.send(updateMetadataCommand);
       }
     } catch (metadataError) {
@@ -567,9 +567,6 @@ export async function storeModelMetadata(
       description = 'Image description unavailable';
     }
   }
-
-
-
 
   // Set up the path for the metadata JSON file
   const metadataKey = `users/${userId}/metadata.json`;
