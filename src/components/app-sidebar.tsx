@@ -59,11 +59,7 @@ const data = {
       url: "/dashboard/text-3d",
       icon: Quote,
     },
-    {
-      title: "Texture Generation",
-      url: "/dashboard/texture-generation",
-      icon: Grid,
-    }
+
 
   ],
 

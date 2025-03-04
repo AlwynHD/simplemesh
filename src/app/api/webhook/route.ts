@@ -55,13 +55,13 @@ export async function POST(req: Request) {
 
         let credits = 0
 
-        if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') {
+        if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') { //personal
             credits = 1000;
-        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') {
-            credits = 2000;
+        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro
+            credits = 2500;
         }
-        else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') {
-            credits = 3000;
+        else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') { //enterprise
+            credits = 10000;
         }
 
         const supabaseservice = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
