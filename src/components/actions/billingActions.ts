@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { createClientServer } from "@/utils/supabase/server"
 import { stripe } from '@/lib/stripe'
+import { cookies } from 'next/headers'
 
 type BillingResponse = {
     credits: number
