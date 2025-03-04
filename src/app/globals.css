@@ -153,3 +153,31 @@ body {
   }
 }
 
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes float-delayed {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 5s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, rgb(var(--foreground) / 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--foreground) / 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
