@@ -43,15 +43,15 @@ export async function GET(request: Request) {
                 console.log("User has an active subscription")
                 stripeSession = await stripe.billingPortal.sessions.create({
                     customer: userData.stripe_customer_id,
-                    return_url: `http://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
+                    return_url: `https://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
                 });
             } else {
                 // The user does not have an active subscription.
                 // Create a new Checkout Session using the existing customer.
                 console.log("User has a stripe customer id but no active subscription")
                 stripeSession = await stripe.checkout.sessions.create({
-                    success_url: `http://${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
-                    cancel_url: `http://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
+                    success_url: `https://${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+                    cancel_url: `https://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
                     payment_method_types: ["card"],
                     mode: "subscription",
                     customer: userData.stripe_customer_id, // Reuse existing customer.
@@ -75,8 +75,8 @@ export async function GET(request: Request) {
             const { searchParams } = new URL(request.url);
             const priceID = searchParams.get("priceID") || process.env.STRIPE_PRICE_ID;
             stripeSession = await stripe.checkout.sessions.create({
-                success_url: `http://${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
-                cancel_url: `http://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
+                success_url: `https://${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+                cancel_url: `https://${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                 payment_method_types: ["card"],
                 mode: "subscription",
                 customer_email: data.user.email ?? '',
