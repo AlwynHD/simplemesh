@@ -9,7 +9,6 @@ import {
   Grid,
   BookText,
   Sparkles,
-  Home,
   LayoutDashboard
 } from "lucide-react"
 
@@ -28,7 +27,6 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 // This is sample data.
 import { Lock } from "lucide-react"
-import { title } from "process"
 const data = {
   teams: [
     {

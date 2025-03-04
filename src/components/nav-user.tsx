@@ -3,11 +3,9 @@ import { useRouter } from 'next/navigation'
 
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
   CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react"
 
 import {
@@ -34,8 +32,8 @@ import {
 import { signOut } from "@/components/login-components/login-actions"
 import useUserData from "@/hooks/use-userData"
 export function NavUser({ variant = "default" }: { variant?: "default" | "small" }) {
-  const { isMobile, state } = useSidebar()
-  const { user, error, isLoading } = useUserData();
+  const { isMobile, } = useSidebar()
+  const { user,   } = useUserData();
   const router = useRouter()
 
   const avatarContent = (

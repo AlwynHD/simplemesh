@@ -1,6 +1,5 @@
 "use client"
 
-import { createClient } from "@/utils/supabase/client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import { useRouter } from 'next/navigation';
@@ -12,7 +11,6 @@ import {
 } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,

@@ -28,7 +28,7 @@ export function LoginWithLogo() {
       setOtpValue('')  
       setError('')
     } catch (err) {
-      setError('Failed to send OTP. Please try again.')
+      setError('Failed to send OTP. Please try again.' + err)
     } finally {
       setIsLoading(false)
     }
@@ -41,7 +41,7 @@ export function LoginWithLogo() {
       setError('')
       // Handle successful verification (e.g., redirect to dashboard)
     } catch (err) {
-      setError('Invalid OTP. Please try again.')
+      setError('Invalid OTP. Please try again.' + err)
     }
   }
 
