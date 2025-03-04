@@ -54,7 +54,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `http://${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `http://simplemesh.ai/auth/callback`,
       queryParams: {
         access_type: "offline",
         prompt: "consent",
