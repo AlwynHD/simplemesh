@@ -3,26 +3,26 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 const TestimonialSection = () => {
-    const testimonials = [
-      {
-        quote: "Simplemesh has cut my 3D modeling time by at least 70%. I needed custom 3D elements for a client's e-commerce site, and I was able to generate exactly what I needed in minutes instead of outsourcing. The quality is impressive enough for professional web use.",
-        name: "Hamza Jait",
-        title: "Frontend Developer",
-        avatar: "https://randomuser.me/api/portraits/men/59.jpg"
-      },
-      {
-        quote: "As an indie game developer, budget and time constraints are always an issue. Simplemesh has been a revelation for our small studio. We've used it to create environmental assets and props that would have taken days to model manually. The export options work perfectly with our game engine.",
-        name: "Owen Read",
-        title: "Lead Developer at Indie Games",
-        avatar: "https://randomuser.me/api/portraits/men/68.jpg"
-      },
-      {
-        quote: "I've tried several AI 3D tools and Simplemesh stands out for its clean topology and texturing. The mesh quality requires minimal cleanup, and the materials are production-ready. I use it regularly for concept visualization and prototyping before committing to full production.",
-        name: "Vernon Reynolds",
-        title: "Technical Artist",
-        avatar: "https://randomuser.me/api/portraits/men/76.jpg"
-      }
-    ];
+  const testimonials = [
+    {
+      quote: "Simplemesh has cut my 3D modeling time by at least 70%. I needed custom 3D elements for a client's e-commerce site, and I was able to generate exactly what I needed in minutes instead of outsourcing. The quality is impressive enough for professional web use.",
+      name: "Hamza Jait",
+      title: "Frontend Developer",
+      avatar: "https://i.pravatar.cc/150?img=64"
+    },
+    {
+      quote: "As an indie game developer, budget and time constraints are always an issue. Simplemesh has been a revelation for our small studio. We've used it to create environmental assets and props that would have taken days to model manually. The export options work perfectly with our game engine.",
+      name: "Owen Read",
+      title: "Lead Developer at Indie Games",
+      avatar: "https://i.pravatar.cc/150?img=52"
+    },
+    {
+      quote: "I've tried several AI 3D tools and Simplemesh stands out for its clean topology and texturing. The mesh quality requires minimal cleanup, and the materials are production-ready. I use it regularly for concept visualization and prototyping before committing to full production.",
+      name: "Vernon Reynolds",
+      title: "Technical Artist",
+      avatar: "https://i.pravatar.cc/150?img=12"
+    }
+  ];
 
   return (
     <section className="py-24 bg-background relative overflow-hidden">
