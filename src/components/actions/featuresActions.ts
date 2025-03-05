@@ -78,11 +78,11 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
       useFileOutput: false,
     })
     const fileId = uuidv4();
-    await storeModelMetadata( //store metadata atleast
-      userId,
-      fileId,
-      input.image
-    );
+
+    storeModelMetadata(userId, fileId, input.image) //do this before as it doesnt matter
+    .catch(error => console.error("Error storing model metadata:", error));
+
+
     const webhookUrl = `${process.env.BASE_URL}/api/replicate-webhook/?userId=${userId}&modelId=${fileId}`;
 
     const output = await replicate.run(
