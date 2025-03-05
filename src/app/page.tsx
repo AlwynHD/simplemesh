@@ -10,6 +10,9 @@ import { Disclosure } from '@headlessui/react'
 
 import HeroSection from '@/components/landing/hero'
 import GallerySection from '@/components/landing/gallery'
+import FeatureShowcase from '@/components/landing/features'
+import FeaturesGrid from '@/components/landing/featuresGrid'
+import TestimonialSection from '@/components/landing/testimonials'
 export default function Home() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [animatedItems, setAnimatedItems] = useState<{ [key: string]: boolean }>({});
@@ -232,157 +235,84 @@ export default function Home() {
             </section>
 
             {/* 2. Features Section */}
-            <section className="py-16 bg-gradient-to-b from-background to-background/95 border-t border-border">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            {
-                                title: "Text to 3D",
-                                description: "Generate detailed 3D models from text descriptions",
-                                image: "/HeroShowcase/GrookPoster.jpg",
-                                text: "\"A humanoid wooden creature with plant-like features, 3D-rendered\"",
-                                type: "Text"
-                            },
-                            {
-                                title: "Image to 3D",
-                                description: "Convert any image into a 3D model instantly",
-                                image: "/HeroShowcase/ManBustPoster.jpg",
-                                type: "PNG"
-                            },
-                            {
-                                title: "AI Texturing",
-                                description: "Apply stunning textures to any 3D model",
-                                image: "/HeroShowcase/WitchPoster.jpg",
-                                type: "JPG"
-                            },
-                            {
-                                title: "Remesh",
-                                description: "Create high-quality assets in seconds",
-                                image: "/HeroShowcase/PikaPoster.jpg",
-                                type: "3D"
-                            }
-                        ].map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                                className="relative bg-card/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-border/50 group h-full"
-                            >
-                                <div className="p-6 flex flex-col h-full">
-                                    <h3 className="text-2xl font-bold mb-2 text-foreground">{feature.title}</h3>
-                                    <p className="text-muted-foreground mb-6">{feature.description}</p>
+            <FeatureShowcase />
 
-                                    <div className="relative flex-grow mb-6 mt-2">
-                                        <div className="aspect-square relative rounded-lg overflow-hidden">
-                                            <Image
-                                                src={feature.image}
-                                                alt={feature.title}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="relative">
-                                        <div className="absolute -top-3 right-0 bg-secondary/80 backdrop-blur-sm rounded-full py-1 px-3 shadow-md">
-                                            <span className="text-sm font-medium">{feature.type}</span>
-                                        </div>
-                                        <div className="bg-secondary/20 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
-                                            {feature.text ? (
-                                                <p className="text-sm">{feature.text}</p>
-                                            ) : (
-                                                <div className="aspect-square w-full max-w-[80px] mx-auto relative">
-                                                    <Image
-                                                        src={feature.type === "PNG" ? "/IndexMan.png" : feature.type === "JPG" ? "/HeroShowcase/WitchNoTextures.png" : "/Pika.png"}
-                                                        alt={`${feature.type} preview`}
-                                                        fill
-                                                        className="object-contain"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
 
             {/* 3. CTA Section */}
             <section className="py-16 border-y border-border relative overflow-hidden bg-secondary/10">
+                {/* Base background */}
                 <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                <div className="container relative z-10 mx-auto px-4">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-                        <div className="flex items-center text-center md:text-left gap-6">
-                            <div className="hidden md:block text-5xl">✨</div>
-                            <div>
-                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
-                                    Who Said 3D Had to Be Hard?
-                                </h2>
-                                <p className="text-lg text-muted-foreground">
-                                    So easy, your grandma could make a 3D model
-                                </p>
-                            </div>
-                        </div>
 
-                        <motion.button
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="px-8 py-4 bg-primary text-primary-foreground rounded-xl text-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20"
-                        >
-                            Start Creating Now
-                            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </motion.button>
+                {/* Theme-appropriate floating elements */}
+                <div className="absolute top-8 left-[10%] w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/10 rounded-2xl -rotate-6 shadow-xl border border-primary/20 hidden md:block" style={{ animation: "float1 6s ease-in-out infinite" }}></div>
+
+                <div className="absolute bottom-12 right-[12%] w-20 h-20 bg-gradient-to-tr from-muted/40 to-accent/20 rounded-full shadow-xl border border-border/30 hidden md:block" style={{ animation: "float2 7s ease-in-out infinite" }}></div>
+
+                <div className="absolute top-[40%] right-[20%] w-16 h-16 bg-gradient-to-br from-secondary/50 to-border/30 rounded transform rotate-45 shadow-xl border border-secondary/40 hidden md:block" style={{ animation: "float3 8s ease-in-out infinite" }}></div>
+
+                <div className="absolute bottom-[40%] left-[15%] w-14 h-14 bg-gradient-to-r from-ring/30 to-primary/20 rounded-md shadow-xl border border-ring/20 hidden md:block" style={{ animation: "float4 5s ease-in-out infinite" }}></div>
+
+                {/* Content container */}
+                <div className="container relative z-10 mx-auto px-4">
+                    <div className="backdrop-blur-sm bg-background/30 rounded-2xl p-8 border border-border/30 shadow-xl">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                            <div className="flex items-center text-center md:text-left gap-6">
+                                {/* 3D Cube icon instead of sparkle emoji */}
+                                <div className="hidden md:flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full shadow-inner">
+                                    <svg viewBox="0 0 24 24" width="36" height="36" className="text-primary fill-current">
+                                        <path d="M12,0.5L3,5.5V15.5L12,20.5L21,15.5V5.5L12,0.5Z M12,2.311L18.25,6L12,9.689L5.75,6L12,2.311Z M4.75,7.25L11,10.939V18.75L4.75,15.061V7.25Z M13,18.75V10.939L19.25,7.25V15.061L13,18.75Z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/90">
+                                        3D Creation Made Ridiculously Simple
+                                    </h2>
+                                    <p className="text-lg text-muted-foreground">
+                                        Turn your ideas into stunning 3D models in minutes — no technical skills required
+                                    </p>
+                                </div>
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="px-8 py-4 bg-primary text-primary-foreground rounded-xl text-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 group relative overflow-hidden"
+                            >
+                                <span className="relative z-10">Start Creating Now</span>
+                                <svg className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </motion.button>
+                        </div>
                     </div>
                 </div>
+
+                {/* Custom animations for floating elements */}
+                <style jsx>{`
+        @keyframes float1 {
+            0%, 100% { transform: translateY(0) rotate(-6deg); }
+            50% { transform: translateY(-20px) rotate(-2deg); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(20px); }
+        }
+        @keyframes float3 {
+            0%, 100% { transform: translateY(0) rotate(45deg); }
+            50% { transform: translateY(-15px) rotate(50deg); }
+        }
+        @keyframes float4 {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(12px); }
+        }
+    `}</style>
             </section>
 
             {/* 4. Features Grid */}
-            <section className="py-20 bg-background" id="tools">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-center mb-12">Powerful Features</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                        {[
-                            { icon: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", title: "3D Assets in Seconds" },
-                            { icon: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", title: "HQ Materials" },
-                            { icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z", title: "Automatic Remesh" },
-                            { icon: "M19.51 3.08 3.08 19.51c.09.34.27.65.51.9.25.24.56.42.9.51L20.93 4.49c-.19-.69-.73-1.23-1.42-1.41z", title: "Re-Texture AI" },
-                            { icon: "M5 2.5l.5-.5h2l.5.5v11l-.5.5h-2l-.5-.5v-11z", title: "Big 3D Library" },
-                            { icon: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z", title: "All 3D Formats" },
-                            { icon: "M208 34H80A14 14 0 0 0 66 48V66H48A14 14 0 0 0 34 80V208a14 14 0 0 0 14 14H176a14 14 0 0 0 14-14V190h18a14 14 0 0 0 14-14V48A14 14 0 0 0 208 34z", title: "AI Image Studio" },
-                            { icon: "M8.5 2a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-1 0v-11a.5.5 0 0 1 .5-.5m-2 2a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5m4 0a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5m-6 1.5A.5.5 0 0 1 5 6v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m8 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m-10 1A.5.5 0 0 1 3 7v2a.5.5 0 0 1-1 0V7a.5.5 0 0 1 .5-.5m12 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0V7a.5.5 0 0 1 .5-.5", title: "Sound/Speech AI" },
-                            { icon: "M224 66H174V56a22 22 0 0 0-22-22H104A22 22 0 0 0 82 56V66H32A14 14 0 0 0 18 80V192a14 14 0 0 0 14 14H224a14 14 0 0 0 14-14V80A14 14 0 0 0 224 66z", title: "3D Tools" },
-                            { icon: "m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z", title: "Automatic LODs" },
-                            { icon: "M6 10V20H19V10H6ZM18 8H20C20.5523 8 21 8.44772 21 9V21C21 21.5523 20.5523 22 20 22H4C3.44772 22 3 21.5523 3 21V9C3 8.44772 3.44772 8 4 8H6V7C6 3.68629 8.68629 1 12 1C15.3137 1 18 3.68629 18 7V8Z", title: "Private by Default" },
-                            { icon: "M7 20h4c0 1.1-.9 2-2 2s-2-.9-2-2zm-2-1h8v-2H5v2zm11.5-9.5c0 3.82-2.66 5.86-3.77 6.5H5.27c-1.11-.64-3.77-2.68-3.77-6.5C1.5 5.36 4.86 2 9 2s7.5 3.36 7.5 7.5z", title: "Weekly Updates!" }
-                        ].map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 10 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.3, delay: index * 0.04 }}
-                                whileHover={{ y: -5, backgroundColor: "hsl(var(--secondary) / 0.15)" }}
-                                className="p-4 rounded-xl border border-border bg-secondary/5 flex items-center gap-3 hover:shadow-md transition-all"
-                            >
-                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d={feature.icon}></path>
-                                    </svg>
-                                </div>
-                                <span className="font-medium">{feature.title}</span>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            <FeaturesGrid />
 
-            {/* 5. Main CTA Video Section */}
+            {/* 5. Main CTA Video Section
             <section className="py-20 bg-gradient-to-b from-background to-background/90 border-b border-border">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col lg:flex-row items-center gap-12">
@@ -442,94 +372,11 @@ export default function Home() {
                         </motion.div>
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* 6. Testimonials Section */}
-            <section className="py-20 bg-background">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-16 max-w-2xl mx-auto">
-                        <p className="text-primary font-medium mb-2">Happy 3D AI Studio Users</p>
-                        <h2 className="text-3xl md:text-4xl font-bold">Why choose 3D AI Studio?</h2>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                quote: "The speed in which I can generate 3D models is astonishing. Its simplified my workflow and given my applications an aesthetic uplift that impresses clients. I even 3D printed a few of those Models and they came out great",
-                                name: "Tim Karlowitz",
-                                title: "Website Developer",
-                                avatar: "/avatars/tim.jpg"
-                            },
-                            {
-                                quote: "With the 3D AI STUDIO, Ive been able to create complex, high-quality 3D models in seconds, shaving hours off of my usual timescales and allowing me to focus more on getting creative. It has been a game-changer. This is the best AI 3D Model Generator i have ever used!",
-                                name: "Noah Böhringer",
-                                title: "Game Developer at BHR Studios",
-                                avatar: "/avatars/noah.jpg"
-                            },
-                            {
-                                quote: "So cool! I just logged in and was very quickly able to make a 3D model from a prompt. Could see a lot of applications of this in video editing / animation. Cant wait for all the new Features!",
-                                name: "Dillion Verma",
-                                title: "Developer @Nvidia",
-                                avatar: "/avatars/dillion.jpg"
-                            }
-                        ].map((testimonial, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                                whileHover={{ y: -5 }}
-                                className="bg-card rounded-xl p-6 shadow-lg border border-border flex flex-col h-full"
-                            >
-                                <div className="flex mb-4">
-                                    {[...Array(5)].map((_, i) => (
-                                        <svg key={i} className="w-5 h-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                        </svg>
-                                    ))}
-                                </div>
-
-                                <blockquote className="flex-grow mb-6 text-foreground">
-                                &quot;{testimonial.quote}&quot;
-                                </blockquote>
-
-                                <div className="flex items-center">
-                                    <div className="mr-4">
-                                        <Image
-                                            src={testimonial.avatar}
-                                            alt={testimonial.name}
-                                            width={48}
-                                            height={48}
-                                            className="rounded-full"
-                                        />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-medium">{testimonial.name}</h4>
-                                        <p className="text-sm text-muted-foreground">{testimonial.title}</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <div className="text-center mt-10">
-                        <a
-                            href="https://www.trustpilot.com/review/3daistudio.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary/80 inline-flex items-center"
-                        >
-                            Read all our customer reviews on Trustpilot
-                            <svg className="ml-2 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </section>
+            <TestimonialSection />
 
             {/* 7. Final CTA Section */}
             <section className="py-16 bg-primary text-primary-foreground">
