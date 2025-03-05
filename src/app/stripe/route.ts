@@ -43,7 +43,7 @@ export async function GET(request: Request) {
                 console.log("User has an active subscription")
                 stripeSession = await stripe.billingPortal.sessions.create({
                     customer: userData.stripe_customer_id,
-                    return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
+                    return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                 });
             } else {
                 // The user does not have an active subscription.
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
                 console.log("User has a stripe customer id but no active subscription")
                 stripeSession = await stripe.checkout.sessions.create({
                     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
-                    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing/`,
+                    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                     payment_method_types: ["card"],
                     mode: "subscription",
                     customer: userData.stripe_customer_id, // Reuse existing customer.
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
             const { searchParams } = new URL(request.url);
             const priceID = searchParams.get("priceID") || process.env.STRIPE_PRICE_ID;
             stripeSession = await stripe.checkout.sessions.create({
-                success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+                success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                 cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                 payment_method_types: ["card"],
                 mode: "subscription",
