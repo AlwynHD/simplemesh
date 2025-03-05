@@ -41,12 +41,38 @@ export async function POST(req: Request) {
             .eq('id', subscription.metadata.userID);
         console.log(subscription.metadata.userID);
         console.log(subscription.customer);
+
+        console.log('Payment was successful');
+        
+        // Get price ID to determine credits
+        const priceId = subscription.items.data[0].price.id;
+        let credits = 0;
+        if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') { //personal
+            credits = 1000;
+        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro 
+            credits = 2500;
+        } else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') { //enterprise
+            credits = 10000;
+        }
+        
+        // Update both stripe_customer_id and credits in one operation
+        await supabaseservice
+            .from('user_billing')
+            .update({ 
+                stripe_customer_id: subscription.customer,
+                credits: credits 
+            })
+            .eq('id', subscription.metadata.userID);
+
     }
 
     //every time user pays successfully including the first one
     //so we need to add credits here
     if (event.type === 'invoice.payment_succeeded') {
         const invoice = event.data.object;
+        if (invoice.billing_reason === 'subscription_create') {
+            return;
+        }
         const subscriptionId = invoice.subscription;
 
         const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
