@@ -79,8 +79,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
     })
     const fileId = uuidv4();
 
-    storeModelMetadata(userId, fileId, input.image) //do this before as it doesnt matter
-    .catch(error => console.error("Error storing model metadata:", error));
+    await storeModelMetadata(userId, fileId, input.image) //do this before as it doesnt matter if before or not
 
 
     const webhookUrl = `https://www.simplemesh.ai/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
