@@ -2,20 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
-import { createClient } from "@supabase/supabase-js";
-import { storeModelMetadata, downloadFile } from '@/components/actions/featuresActions';
+import { downloadFile } from '@/components/actions/featuresActions';
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
-    }
-  })
+
 
 
 export async function POST(request: NextRequest) {
   try {
+    const s3Client = new S3Client({
+        region: process.env.AWS_REGION!,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+        }
+      })
     const body = await request.json();
     const { userId, modelId } = Object.fromEntries(request.nextUrl.searchParams);
     console.log('Webhook body:', body);
