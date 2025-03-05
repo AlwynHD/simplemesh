@@ -13,6 +13,8 @@ import GallerySection from '@/components/landing/gallery'
 import FeatureShowcase from '@/components/landing/features'
 import FeaturesGrid from '@/components/landing/featuresGrid'
 import TestimonialSection from '@/components/landing/testimonials'
+import { FAQSection } from '@/components/landing/faq'
+import { Footer } from '@/components/landing/footer'
 export default function Home() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [animatedItems, setAnimatedItems] = useState<{ [key: string]: boolean }>({});
@@ -375,187 +377,67 @@ export default function Home() {
             </section> */}
 
             {/* 6. Testimonials Section */}
-
             <TestimonialSection />
 
             {/* 7. Final CTA Section */}
-            <section className="py-16 bg-primary text-primary-foreground">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-                        <div className="flex items-center gap-6">
-                            <div className="text-5xl hidden md:block">👋</div>
+            <section className="py-20 bg-primary text-white relative overflow-hidden">
+                {/* Background decorative elements */}
+                <div className="absolute top-0 right-0 w-1/3 h-full opacity-10">
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="currentColor" d="M42.8,-68.2C54.9,-61.8,63.7,-48.4,71.1,-33.7C78.5,-19,84.4,-3,81.8,11.4C79.1,25.7,67.9,38.5,55.7,48.5C43.5,58.6,30.3,65.9,15.8,70.2C1.3,74.6,-14.6,76,-28.8,71.3C-43,66.6,-55.6,55.7,-64.3,42.2C-73,28.6,-77.8,12.3,-78.5,-5C-79.2,-22.3,-75.8,-40.5,-65.1,-51.5C-54.4,-62.5,-36.3,-66.2,-20.8,-70.6C-5.3,-74.9,8.6,-79.9,22.9,-78.1C37.2,-76.4,51.9,-67.9,58.3,-57.1C64.7,-46.2,63.2,-33,61.1,-21.4C59,-9.7,56.2,0.4,53.5,10.5" transform="translate(100 100)" />
+                    </svg>
+                </div>
+
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+                        <div className="flex items-center gap-6 max-w-xl">
+                            <div className="hidden md:flex h-16 w-16 bg-white/15 rounded-full items-center justify-center shadow-lg backdrop-blur-sm">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 8L19 12L15 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                    <path d="M4 12H18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                            </div>
                             <div>
-                                <h2 className="text-3xl md:text-4xl font-bold mb-2">
-                                    Try it yourself!
+                                <h2 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight leading-tight">
+                                    Create without Limits
                                 </h2>
-                                <p className="text-lg opacity-90">
-                                    It&apos;s like Magic, you should try it!
+                                <p className="text-xl opacity-85 font-light">
+                                    Advanced AI generatio at your fingertips
                                 </p>
                             </div>
                         </div>
 
                         <motion.button
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.04, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-8 py-4 bg-background text-foreground rounded-xl text-xl font-bold flex items-center gap-2 shadow-lg"
+                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                            onClick={openModal}
+                            className="px-8 py-5 bg-white text-primary rounded-xl text-xl font-bold shadow-xl flex items-center group relative overflow-hidden"
                         >
-                            Start generating!
-                            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                            <span className="absolute inset-0 bg-gradient-to-r from-white/0 to-blue-100/40 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                            <span className="mr-2 relative z-10">Generate Now</span>
+                            <svg className="w-6 h-6 ml-2 relative z-10 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </motion.button>
                     </div>
                 </div>
+
+                {/* Bottom decorative dots */}
+                <div className="absolute bottom-0 left-0 w-full h-4 flex justify-center gap-2 opacity-30">
+                    {[...Array(20)].map((_, i) => (
+                        <div key={i} className="w-1 h-1 rounded-full bg-white" style={{ opacity: Math.random() * 0.5 + 0.5 }}></div>
+                    ))}
+                </div>
             </section>
 
             {/* 8. FAQ Section */}
-            <section className="py-20 bg-background" id="questions">
-                <div className="container mx-auto px-4 max-w-3xl">
-                    <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+            <FAQSection />
 
-                    {[
-                        {
-                            question: "How long does a Generation take?",
-                            answer: "Typically, generating a 3D model takes between 15 to 25 seconds. The exact time can vary based on the complexity of the request and the current load on our servers."
-                        },
-                        {
-                            question: "How can I create a 3D Model?",
-                            answer: "To create a 3D model, you have the flexibility to use a text prompt or upload an image for reference. Our platform is designed to be user-friendly and intuitive, ensuring you can easily bring your creative visions to life."
-                        },
-                        {
-                            question: "How many credits does each task cost?",
-                            answer: "For Image to 3D and Text to 3D tasks, generation costs 25 credits. Remeshing is free and AI texturing... is also free"
-                        },
-                        {
-                            question: "Do you offer refunds?",
-                            answer: "Of course! Your satisfaction is our priority. If you are dissatisfied with our service, please contact us at support@3daistudio.com for a refund."
-                        }
-                    ].map((faq, index) => (
-                        <Disclosure key={index} as="div" className="mt-4">
-                            {({ open }) => (
-                                <>
-                                    <Disclosure.Button className="flex justify-between w-full px-4 py-4 text-left text-lg font-medium bg-card/50 hover:bg-card rounded-lg border border-border focus:outline-none focus-visible:ring focus-visible:ring-primary/50">
-                                        <span>{faq.question}</span>
-                                        <svg
-                                            className={`${open ? 'transform rotate-180' : ''
-                                                } w-5 h-5 text-primary`}
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M19 9l-7 7-7-7"
-                                            />
-                                        </svg>
-                                    </Disclosure.Button>
-                                    <Disclosure.Panel className="px-4 pt-4 pb-6 text-muted-foreground bg-card/30 rounded-b-lg border-x border-b border-border -mt-0.5">
-                                        {faq.answer}
-                                    </Disclosure.Panel>
-                                </>
-                            )}
-                        </Disclosure>
-                    ))}
-
-                    <div className="mt-10 text-center">
-                        <p className="text-muted-foreground">
-                            Didn&apos;t find the answer you&apos;re looking for?
-                            <a href="mailto:support@3daistudio.com" className="text-primary ml-1 hover:underline">
-                                Contact our support
-                            </a>
-                        </p>
-                    </div>
-                </div>
-            </section>
 
             {/* 9. Footer */}
-            <footer className="bg-background border-t border-border pt-16 pb-10">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
-                        <div className="lg:col-span-2 space-y-6">
-                            <div>
-                                <h2 className="text-2xl font-bold mb-2">3D AI Studio</h2>
-                                <p className="text-muted-foreground">The Ultimate Studio for 3D Assets.</p>
-                            </div>
+            <Footer />
 
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium flex items-center gap-2"
-                            >
-                                Start generating
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 4v16m8-8H4" />
-                                </svg>
-                            </motion.button>
-                        </div>
-
-                        {[
-                            {
-                                title: "Features",
-                                links: [
-                                    { text: "Image to 3D", href: "" },
-                                    { text: "Text to 3D", href: "" },
-                                    { text: "Image AI Studio", href: "" },
-                                    { text: "Texture AI", href: "" },
-                                    { text: "Community Creations", href: "" }
-                                ]
-                            },
-                            {
-                                title: "Support",
-                                links: [
-                                    { text: "Feedback", href: "mailto:support@3daistudio.com?subject=Feedback" },
-                                    { text: "Contact", href: "mailto:support@3daistudio.com?subject=Contact" },
-                                    { text: "Status", href: "https://3daistudio.com/Status" },
-                                    { text: "Pricing", href: "https://3daistudio.com/Pricing" },
-                                    { text: "Documentation", href: "https://docs.3daistudio.com/" }
-                                ]
-                            },
-                            {
-                                title: "Company",
-                                links: [
-                                    { text: "Affiliate Program", href: "https://3daistudio.lemonsqueezy.com/affiliates" },
-                                    { text: "Invest in Us", href: "mailto:jan@3daistudio.com?subject=Investment Inquiry" },
-                                    { text: "Discord", href: "https://discord.gg/ENf22XzWgu" },
-                                    { text: "Twitter", href: "https://x.com/3DAISTUDIO" },
-                                    { text: "Instagram", href: "https://www.instagram.com/3daistudio/" }
-                                ]
-                            },
-                            {
-                                title: "Legal",
-                                links: [
-                                    { text: "Imprint", href: "" },
-                                    { text: "Data Protection", href: "" },
-                                    { text: "Terms and Conditions", href: "" },
-                                    { text: "Cancellation", href: "" }
-                                ]
-                            }
-                        ].map((column, index) => (
-                            <div key={index}>
-                                <h3 className="font-medium text-foreground mb-4">{column.title}</h3>
-                                <ul className="space-y-3">
-                                    {column.links.map((link, i) => (
-                                        <li key={i}>
-                                            <a
-                                                href={link.href || "#"}
-                                                className="text-muted-foreground hover:text-foreground transition-colors"
-                                            >
-                                                {link.text}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="border-t border-border mt-16 pt-8 text-center text-sm text-muted-foreground">
-                        <p>© {new Date().getFullYear()} 3D AI Studio. All rights reserved.</p>
-                    </div>
-                </div>
-            </footer>
 
             {/* Login Popup */}
             <Modal isOpen={isOpen} onClose={closeModal}>

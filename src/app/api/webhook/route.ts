@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
         if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') { //personal
             credits = 1000;
-        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro
+        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro 
             credits = 2500;
         }
         else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') { //enterprise
