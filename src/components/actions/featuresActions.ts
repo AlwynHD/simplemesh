@@ -83,7 +83,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
     .catch(error => console.error("Error storing model metadata:", error));
 
 
-    const webhookUrl = `${process.env.BASE_URL}/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
+    const webhookUrl = `https://simplemesh.ai/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
     
     const output = await replicate.run(
       "alwynhd/trellis_alwyn:b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
