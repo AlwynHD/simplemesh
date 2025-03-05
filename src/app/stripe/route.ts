@@ -50,8 +50,8 @@ export async function GET(request: Request) {
                 // Create a new Checkout Session using the existing customer.
                 console.log("User has a stripe customer id but no active subscription")
                 stripeSession = await stripe.checkout.sessions.create({
-                    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
-                    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/`,
+                    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
+                    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing/`,
                     payment_method_types: ["card"],
                     mode: "subscription",
                     customer: userData.stripe_customer_id, // Reuse existing customer.

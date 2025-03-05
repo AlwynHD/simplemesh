@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     if (event.type === 'invoice.payment_succeeded') {
         const invoice = event.data.object;
         if (invoice.billing_reason === 'subscription_create') {
-            return;
+            return new NextResponse('ok', { status: 200 });
         }
         const subscriptionId = invoice.subscription;
 
