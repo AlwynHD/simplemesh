@@ -16,7 +16,7 @@ const s3Client = new S3Client({
 })
 
 // Helper function to download file from URL
-async function downloadFile(url: string): Promise<Buffer> {
+export async function downloadFile(url: string): Promise<Buffer> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
@@ -77,6 +77,13 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
       auth: process.env.REPLICATE_API_TOKEN!,
       useFileOutput: false,
     })
+    const fileId = uuidv4();
+    await storeModelMetadata( //store metadata atleast
+      userId,
+      fileId,
+      input.image
+    );
+    const webhookUrl = `${process.env.BASE_URL}/api/replicate-webhook/?userId=${userId}&modelId=${fileId}`;
 
     const output = await replicate.run(
       "alwynhd/trellis_alwyn:b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
@@ -96,40 +103,37 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
           return_no_background: false,
           ss_guidance_strength: 7.5,
           slat_guidance_strength: 3
-        }
+        },
+        webhook: webhookUrl,
+        webhook_events_filter: ["completed"]
       }
     ) as PredictOutput;
-    const fileId = uuidv4();
-    // Upload to S3 if model was generated
-    if (output.model_file) {
-      try {
-        // Download file from Replicate
-        const fileBuffer = await downloadFile(output.model_file);
+    // Upload to S3 if model was generated - THIS IS NOW HANDLED BY THE WEBHOOK
+    // if (output.model_file) { 
+    //   try {
+    //     // Download file from Replicate
+    //     const fileBuffer = await downloadFile(output.model_file);
 
-        // Generate UUID and path
+    //     // Generate UUID and path
 
-        const fileKey = `users/${userId}/models/${fileId}.glb`;
+    //     const fileKey = `users/${userId}/models/${fileId}.glb`;
 
-        // Upload to S3
-        const command = new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME!,
-          Key: fileKey,
-          Body: fileBuffer,
-          ContentType: 'model/gltf-binary'
-        });
+    //     // Upload to S3
+    //     const command = new PutObjectCommand({
+    //       Bucket: process.env.S3_BUCKET_NAME!,
+    //       Key: fileKey,
+    //       Body: fileBuffer,
+    //       ContentType: 'model/gltf-binary'
+    //     });
 
-        await s3Client.send(command);
-        await storeModelMetadata(
-          userId,
-          fileId,
-          input.image
-        );
-        // Important: Keep returning the original Replicate URL instead of the S3 URL
-        // Don't modify output.model_file to prevent the S3 URL from being used
-      } catch (uploadError) {
-        console.error('Error uploading to S3:', uploadError);
-      }
-    }
+    //     await s3Client.send(command);
+
+    //     // Important: Keep returning the original Replicate URL instead of the S3 URL
+    //     // Don't modify output.model_file to prevent the S3 URL from being used
+    //   } catch (uploadError) {
+    //     console.error('Error uploading to S3:', uploadError);
+    //   }
+    // }
 
     // Return the original Replicate URL
     return {
