@@ -1,6 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion"; // Added for better animations
+import * as THREE from "three";
+import { useGLTF, Environment, PresentationControls } from "@react-three/drei"; // Removed OrbitControls
+import { Canvas } from "@react-three/fiber";
+import { useAnimations } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+
+// Add this Model component above your main component or in a separate file
+function Model({ url }: { url: string }) {
+  const group = useRef<THREE.Group>();
+  const { scene } = useGLTF(url) as any; // Using any until we import proper GLTF type
+
+  // Add slow spinning animation
+  useFrame((state) => {
+    if (group.current) {
+      group.current.rotation.y += 0.005; // Adjust speed as needed
+    }
+  });
+
+  return <primitive ref={group} object={scene} scale={2.0} position={[0, 0, 0]} />;
+}
+
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -20,7 +42,7 @@ const HeroSection = () => {
       <div className="container relative z-10 mx-auto px-4 max-w-7xl">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Content Column (Text first on mobile for better UX) */}
-          <motion.div 
+          <motion.div
             className="flex-1 space-y-8 text-center lg:text-left"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
@@ -30,11 +52,11 @@ const HeroSection = () => {
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium tracking-wide">
                 3D AI Generation
               </span>
-              
+
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">
                 Turn Ideas Into 3D <span className="text-primary">Instantly</span>
               </h1>
-              
+
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto lg:mx-0">
                 Type a prompt or upload an image to create production-ready 3D models in seconds. No waiting, no complexity.
               </p>
@@ -44,10 +66,10 @@ const HeroSection = () => {
               <button className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                 Start Creating
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 4L10.59 5.41L16.17 11H4V13H16.17L10.59 18.59L12 20L20 12L12 4Z" fill="currentColor"/>
+                  <path d="M12 4L10.59 5.41L16.17 11H4V13H16.17L10.59 18.59L12 20L20 12L12 4Z" fill="currentColor" />
                 </svg>
               </button>
-              
+
               <button className="px-6 py-3 rounded-lg border border-border bg-background/80 backdrop-blur-sm hover:bg-secondary/10 text-foreground font-medium transition-all">
                 See Examples
               </button>
@@ -57,10 +79,10 @@ const HeroSection = () => {
               <div className="flex -space-x-2">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="w-10 h-10 rounded-full border-2 border-background overflow-hidden">
-                    <Image 
-                      src={`https://i.pravatar.cc/100?img=${i+10}`} 
-                      alt={`User ${i}`} 
-                      width={40} 
+                    <Image
+                      src={`https://i.pravatar.cc/100?img=${i + 10}`}
+                      alt={`User ${i}`}
+                      width={40}
                       height={40}
                       className="w-full h-full object-cover"
                     />
@@ -81,34 +103,47 @@ const HeroSection = () => {
           </motion.div>
 
           {/* Image Column */}
-          <motion.div 
+          <motion.div
             className="flex-1 relative"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.9 }}
             transition={{ duration: 0.7, delay: 0.4 }}
           >
-            <div className="relative z-10 aspect-square max-w-md mx-auto">
-              <Image
-                src="https://placehold.co/800x800/3a8ef7/FFFFFF?text=3D+Model+Preview"
-                alt="3D model preview"
-                width={800}
-                height={800}
-                className="rounded-xl shadow-2xl object-cover"
-              />
-              
+            <div className="relative z-10 aspect-square max-w-md mx-auto rounded-xl shadow-2xl object-cover">
+              <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+                <Suspense fallback={null}>
+                  <ambientLight intensity={0.5} />
+                  <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+                  {/* Removed user interaction by setting enabled to false */}
+                  <PresentationControls
+                    global
+                    enabled={false}
+                    zoom={0.5}
+                    rotation={[0, -Math.PI / 4, 0]}
+                    polar={[-Math.PI / 4, Math.PI / 4]}
+                    azimuth={[-Math.PI / 4, Math.PI / 4]}>
+                    <group position={[0, 0, 0]} scale={1.5}>
+                      <Model url="/LandingDemo.glb" />
+                    </group>
+                  </PresentationControls>
+                  <Environment preset="city" />
+                  {/* Removed OrbitControls completely */}
+                </Suspense>
+              </Canvas>
+
               {/* Floating element 1 */}
               <div className="absolute -top-4 -left-4 bg-background rounded-lg p-3 shadow-lg animate-float">
                 <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M15 12L10 8V16L15 12Z" fill="currentColor"/>
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+                  <path d="M15 12L10 8V16L15 12Z" fill="currentColor" />
                 </svg>
               </div>
-              
+
               {/* Floating element 2 */}
               <div className="absolute -bottom-4 -right-4 bg-background rounded-lg p-3 shadow-lg animate-float-delayed">
                 <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 9L12 3L21 9V21H3V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M3 9L12 3L21 9V21H3V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
