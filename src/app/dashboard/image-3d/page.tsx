@@ -21,7 +21,7 @@ import ModelViewer from "@/components/ModelViewer"
 import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash } from 'lucide-react'
 
 // Actions
-import { image3D } from "@/components/actions/featuresActions"
+import { image3D, checkReplicateStatus } from "@/components/actions/featuresActions"
 
 export default function Image3D() {
   // State
@@ -35,27 +35,56 @@ export default function Image3D() {
   const [containerStatus, setContainerStatus] = useState<'unknown' | 'cold' | 'warm'>('unknown')
   const [elapsedTime, setElapsedTime] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
-  
+
   const dropzoneRef = useRef<HTMLDivElement>(null)
   const setCredits = useCreditStore(state => state.setCredits)
 
-  // Track elapsed time during generation
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null
+  const [predictionId, setPredictionId] = useState<string | null>(null)
+  const [modelId, setModelId] = useState<string | null>(null)
 
-    if (isLoading && startTime) {
-      intervalId = setInterval(() => {
-        const seconds = Math.floor((Date.now() - startTime) / 1000)
-        setElapsedTime(`${seconds}s`)
-      }, 1000)
-    } else {
-      setElapsedTime('')
+
+  // Add this polling effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (predictionId && isLoading) {
+      intervalId = setInterval(async () => {
+        try {
+          const result = await checkReplicateStatus(predictionId);
+
+          if (result.status === 'failed' || result.status === 'canceled') {
+            clearInterval(intervalId!);
+            setError('Model generation failed');
+            setIsLoading(false);
+          }
+
+          if (result.status === 'succeeded') {
+            clearInterval(intervalId!);
+
+            // Use the URL directly from Replicate!
+            if (result.output?.model_file) {
+              setModelUrl(result.output.model_file);
+
+              // Still generate a thumbnail
+              if (modelId) {
+                generateAndUploadThumbnail(result.output.model_file, modelId);
+              }
+            } else {
+              setError("No model URL returned");
+            }
+
+            setIsLoading(false);
+          }
+        } catch (err) {
+          console.error('Error polling status:', err);
+        }
+      }, 5000); // Check every 5 seconds
     }
 
     return () => {
-      if (intervalId) clearInterval(intervalId)
-    }
-  }, [isLoading, startTime])
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [predictionId, isLoading, modelId]);
 
   // Set up drag and drop event listeners
   useEffect(() => {
@@ -75,7 +104,7 @@ export default function Image3D() {
     const handleDrop = (e: DragEvent) => {
       e.preventDefault()
       setIsDragging(false)
-      
+
       if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
         handleFileUpload(e.dataTransfer.files[0])
       }
@@ -97,7 +126,7 @@ export default function Image3D() {
       setError('Please select a JPEG or PNG image only')
       return
     }
-    
+
     setError(null)
     setSelectedImage(file)
     setImagePreview(URL.createObjectURL(file))
@@ -120,69 +149,68 @@ export default function Image3D() {
         setError('Please select an image')
         return
       }
-
+  
       setIsLoading(true)
       setStartTime(Date.now())
       setContainerStatus('unknown')
       setError(null)
-
+  
       const loadingRef = { current: true }
-
+  
       // Check container status after 20 seconds
       const statusTimer = setTimeout(() => {
         if (loadingRef.current) {
           setContainerStatus('cold')
         }
       }, 20000)
-
+  
       // Convert image to base64
       const reader = new FileReader()
       reader.readAsDataURL(selectedImage)
-
+  
       reader.onload = async () => {
         const base64Image = reader.result as string
-
+  
         // If response comes back within 5 seconds, mark container as warm
         const warmTimer = setTimeout(() => {
           if (loadingRef.current) {
             setContainerStatus('warm')
           }
         }, 5000)
-
+  
         try {
           const result = await image3D({
             image: base64Image,
             seed: seed,
           })
-
+  
+          // Clear timers as we got a response
           clearTimeout(statusTimer)
           clearTimeout(warmTimer)
-
+  
           if (result?.error) {
             setError(result.error)
             setIsLoading(false)
             loadingRef.current = false
             return
           }
-
+  
           if (result?.updatedCredits) {
             setCredits(result.updatedCredits)
           }
-
-          if (result.modelUrl && result.modelId) {
-            const urlString = result.modelUrl.toString()
-            setModelUrl(urlString)
-
-            generateAndUploadThumbnail(urlString, result.modelId)
-              .catch(error => {
-                console.error("Error in thumbnail workflow:", error)
-              })
-          } else {
-            setError("No model URL returned")
+  
+          // Store the prediction ID and model ID for polling
+          if (result.predictionId) {
+            setPredictionId(result.predictionId)
           }
-
-          setIsLoading(false)
-          loadingRef.current = false
+          
+          if (result.modelId) {
+            setModelId(result.modelId)
+          }
+          
+          // Don't set isLoading to false here
+          // The polling effect will handle that when the model is ready
+          
         } catch (err) {
           clearTimeout(statusTimer)
           clearTimeout(warmTimer)
@@ -230,11 +258,11 @@ export default function Image3D() {
                   <Image className="h-4 w-4" />
                   Upload Image
                 </Label>
-                
+
                 {!imagePreview ? (
-                  <div 
+                  <div
                     ref={dropzoneRef}
-                    className={`mt-1 flex justify-center rounded-lg border ${isDragging ? 'border-primary bg-primary/5' : 'border-dashed border-border'} p-6 cursor-pointer hover:bg-muted/50 transition-colors`} 
+                    className={`mt-1 flex justify-center rounded-lg border ${isDragging ? 'border-primary bg-primary/5' : 'border-dashed border-border'} p-6 cursor-pointer hover:bg-muted/50 transition-colors`}
                     onClick={() => document.getElementById('image')?.click()}
                   >
                     <div className="text-center">
@@ -348,16 +376,16 @@ export default function Image3D() {
                 <div className="size-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
                 <Loader className="h-8 w-8 absolute inset-0 m-auto text-primary" />
               </div>
-              
+
               <h3 className="text-xl font-semibold mt-6 mb-2">Generating 3D Model</h3>
-              
+
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
                 <span className="inline-block px-2 py-1 bg-muted rounded text-sm font-mono">
                   {elapsedTime || "0s"}
                 </span>
                 <span className="text-sm">elapsed</span>
               </div>
-              
+
               {containerStatus === 'cold' && (
                 <p className="text-muted-foreground mt-4 text-sm">
                   Your model is in queue. This may take up to 5 minutes.
