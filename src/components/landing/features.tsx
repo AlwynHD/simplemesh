@@ -9,7 +9,7 @@ const FeatureShowcase = () => {
     {
       title: "Text to 3D",
       description: "Generate detailed 3D models from text descriptions",
-      image: "/HeroShowcase/GrookPoster.jpg",
+      image: "/treeModel.jpg",
       text: "\"A humanoid wooden creature with plant-like features, 3D-rendered\"",
       type: "Text"
     },

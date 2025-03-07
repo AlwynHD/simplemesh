@@ -108,8 +108,8 @@ export default function DashboardPage() {
 
     try {
       const thumbnailGenerator = createThumbnailGenerator({
-        width: 512,
-        height: 512,
+        width: 1024,
+        height: 1024,
       });
       const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(model.url);
       const uploadSuccess = await thumbnailGenerator.uploadThumbnail(thumbnailDataUrl, model.id);

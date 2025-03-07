@@ -230,8 +230,8 @@ export default function Image3D() {
   const generateAndUploadThumbnail = async (modelUrl: string, modelId: string): Promise<void> => {
     try {
       const thumbnailGenerator = createThumbnailGenerator({
-        width: 512,
-        height: 512,
+        width: 1024,
+        height: 1024,
       })
 
       const thumbnailDataUrl = await thumbnailGenerator.generateThumbnail(modelUrl)

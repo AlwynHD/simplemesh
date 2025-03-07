@@ -11,7 +11,7 @@ interface GalleryItem {
 
 // Simplified gallery data - just a few curated models
 const galleryItems: GalleryItem[] = [
-  { id: 1, title: "Futuristic Robot", imageUrl: "https://source.unsplash.com/random/600x600?3d,robot" },
+  { id: 1, title: "Stylised Tree", imageUrl: "/treeModel.jpg" },
   { id: 2, title: "Modern Chair", imageUrl: "https://source.unsplash.com/random/600x600?3d,chair" },
   { id: 3, title: "Fantasy Castle", imageUrl: "https://source.unsplash.com/random/600x600?3d,castle" },
   { id: 4, title: "Stylized Vehicle", imageUrl: "https://source.unsplash.com/random/600x600?3d,car" },
