@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import ModelViewerLanding from "@/components/ModelViewerLanding";
 
 // Define interface for gallery items
 interface GalleryItem {
@@ -22,6 +23,11 @@ const galleryItems: GalleryItem[] = [
 const GallerySection: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<GalleryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Convert JPG path to GLB path
+  const getModelPath = (imagePath: string) => {
+    return imagePath.replace(/\.(jpg|jpeg|png)$/i, '.glb');
+  };
 
   const openModal = (item: GalleryItem): void => {
     setSelectedModel(item);
@@ -120,17 +126,9 @@ const GallerySection: React.FC = () => {
                 </svg>
               </button>
               
-              {/* Model viewer */}
+              {/* 3D Model viewer */}
               <div className="h-[60vh] w-full bg-black/10">
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10">
-                  <div className="text-center p-8">
-                    <div className="animate-spin mb-4 mx-auto w-12 h-12 border-3 border-primary/80 border-t-transparent rounded-full"></div>
-                    <h3 className="text-xl font-medium mb-1">{selectedModel.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Loading 3D model...
-                    </p>
-                  </div>
-                </div>
+                <ModelViewerLanding modelPath={getModelPath(selectedModel.imageUrl)} />
               </div>
               
               {/* Simplified info panel - no download button */}
