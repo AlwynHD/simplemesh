@@ -14,9 +14,9 @@ const galleryItems: GalleryItem[] = [
   { id: 1, title: "Stylised Tree", imageUrl: "/treeModel.jpg" },
   { id: 2, title: "A Rocket on Launch", imageUrl: "/rocketModel.jpg" },
   { id: 3, title: "A Knight in Armor", imageUrl: "/knightModel.jpg" },
-  { id: 4, title: "Stylized Vehicle", imageUrl: "https://source.unsplash.com/random/600x600?3d,car" },
-  { id: 5, title: "Abstract Sculpture", imageUrl: "https://source.unsplash.com/random/600x600?3d,sculpture" },
-  { id: 6, title: "Game Character", imageUrl: "https://source.unsplash.com/random/600x600?3d,character" }
+  { id: 4, title: "A Castle with Flags", imageUrl: "/castleModel.jpg" },
+  { id: 5, title: "A Green Crocodile", imageUrl: "/crocodileModel.jpg" },
+  { id: 6, title: "A Cartoon Leprechaun", imageUrl: "/gingerModel.jpg" }
 ];
 
 const GallerySection: React.FC = () => {
