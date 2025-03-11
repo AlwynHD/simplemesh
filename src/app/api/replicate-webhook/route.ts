@@ -4,9 +4,6 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 import { downloadFile } from '@/components/actions/featuresActions';
 
-
-
-
 export async function POST(request: NextRequest) {
   try {
     const s3Client = new S3Client({

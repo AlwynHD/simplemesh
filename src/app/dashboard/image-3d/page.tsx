@@ -32,7 +32,6 @@ export default function Image3D() {
   const [seed, setSeed] = useState<number | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
   const [startTime, setStartTime] = useState<number | null>(null)
-  const [containerStatus, setContainerStatus] = useState<'unknown' | 'cold' | 'warm'>('unknown')
   const [elapsedTime, setElapsedTime] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
 
@@ -43,17 +42,17 @@ export default function Image3D() {
   const [modelId, setModelId] = useState<string | null>(null)
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
-    
+
     if (isLoading && startTime) {
       timer = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const seconds = Math.floor((elapsed / 1000) % 60);
         const minutes = Math.floor((elapsed / 1000 / 60) % 60);
-        
+
         setElapsedTime(`${minutes}m ${seconds}s`);
       }, 1000); // Update every second
     }
-    
+
     return () => {
       if (timer) clearInterval(timer);
     };
@@ -165,71 +164,57 @@ export default function Image3D() {
         setError('Please select an image')
         return
       }
-  
+
       setIsLoading(true)
       setStartTime(Date.now())
-      setContainerStatus('unknown')
       setError(null)
-  
+
       const loadingRef = { current: true }
-  
-      // Check container status after 20 seconds
-      const statusTimer = setTimeout(() => {
-        if (loadingRef.current) {
-          setContainerStatus('cold')
-        }
-      }, 20000)
-  
+
+
+
       // Convert image to base64
       const reader = new FileReader()
       reader.readAsDataURL(selectedImage)
-  
+
       reader.onload = async () => {
         const base64Image = reader.result as string
-  
-        // If response comes back within 5 seconds, mark container as warm
-        const warmTimer = setTimeout(() => {
-          if (loadingRef.current) {
-            setContainerStatus('warm')
-          }
-        }, 5000)
-  
+
+
+
         try {
           const result = await image3D({
             image: base64Image,
             seed: seed,
           })
-  
+
           // Clear timers as we got a response
-          clearTimeout(statusTimer)
-          clearTimeout(warmTimer)
-  
+
+
           if (result?.error) {
             setError(result.error)
             setIsLoading(false)
             loadingRef.current = false
             return
           }
-  
+
           if (result?.updatedCredits) {
             setCredits(result.updatedCredits)
           }
-  
+
           // Store the prediction ID and model ID for polling
           if (result.predictionId) {
             setPredictionId(result.predictionId)
           }
-          
+
           if (result.modelId) {
             setModelId(result.modelId)
           }
-          
-          // Don't set isLoading to false here
-          // The polling effect will handle that when the model is ready
-          
+
+
+
         } catch (err) {
-          clearTimeout(statusTimer)
-          clearTimeout(warmTimer)
+
           console.error(err)
           setError('Failed to generate model')
           setIsLoading(false)
@@ -402,7 +387,7 @@ export default function Image3D() {
                 <span className="text-sm">elapsed</span>
               </div>
 
-              {containerStatus === 'cold' && (
+              {startTime && (Date.now() - startTime) / 1000 > 20 && (
                 <p className="text-muted-foreground mt-4 text-sm">
                   Your model is in queue. This may take up to 5 minutes.
                 </p>
