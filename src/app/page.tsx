@@ -98,9 +98,9 @@ export default function Home() {
                         <nav className="flex justify-center space-x-8 flex-1">
                             {[
                                 { href: "/#examples", label: "Examples" },
-                                { href: "/#tools", label: "Tools" },
+                                { href: "/pricing", label: "Pricing" },
                                 { href: "/#questions", label: "Questions" },
-                                { href: "/#community", label: "Community" }
+                                { href: "https://discord.gg/XzdMYGg5sM", label: "Community" }
                             ].map((item) => (
                                 <Link
                                     key={item.label}
@@ -153,9 +153,9 @@ export default function Home() {
                     <nav className="px-4 pt-4 pb-5 space-y-2 border-t border-[hsl(var(--border))]/20 mt-2 bg-[hsl(var(--background))]/95">
                         {[
                             { href: "/#examples", label: "Examples" },
-                            { href: "/#tools", label: "Tools" },
+                            { href: "/pricing", label: "Pricing" },
                             { href: "/#questions", label: "Questions" },
-                            { href: "/#community", label: "Community" }
+                            { href: "https://discord.gg/XzdMYGg5sM", label: "Community" }
                         ].map((item) => (
                             <Link key={item.label} href={item.href} className="block">
                                 <div className="flex items-center text-base font-medium text-[hsl(var(--foreground))] py-2.5 px-4 rounded-lg hover:bg-[hsl(var(--secondary))]/10 transition-colors duration-200">
@@ -187,7 +187,10 @@ export default function Home() {
 
             <HeroSection />
 
-            <GallerySection />
+            <section id='examples'>
+                <GallerySection/>
+
+            </section>
 
             {/* 1. Companies Section */}
             <section className="py-10 border-t border-border bg-background/50">
