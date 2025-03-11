@@ -405,7 +405,7 @@ export default function Home() {
                                     Create without Limits
                                 </h2>
                                 <p className="text-xl opacity-85 font-light">
-                                    Advanced AI generatio at your fingertips
+                                    Advanced AI generation at your fingertips
                                 </p>
                             </div>
                         </div>
