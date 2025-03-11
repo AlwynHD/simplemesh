@@ -118,7 +118,7 @@ export function LoginWithLogo() {
         </Button>
         <p className="text-xs text-center text-muted-foreground px-4">
           By logging in, you agree to our{' '}
-          <a href="/terms" className="underline hover:text-primary">
+          <a href="/terms-and-conditions" className="underline hover:text-primary">
             Terms and Conditions
           </a>{' '}
           and{' '}

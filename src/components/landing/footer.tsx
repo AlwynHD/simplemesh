@@ -88,7 +88,6 @@ const footerLinks = [
   {
     title: "Support",
     links: [
-      { text: "Feedback", href: "mailto:support@simplemesh.ai?subject=Feedback" },
       { text: "Contact", href: "mailto:support@simplemesh.ai?subject=Contact" },
       { text: "Pricing", href: "https://simplemesh.ai/pricing" },
     ]
@@ -104,10 +103,8 @@ const footerLinks = [
   {
     title: "Legal",
     links: [
-      { text: "Imprint", href: "/legal/imprint" },
-      { text: "Data Protection", href: "/legal/data-protection" },
-      { text: "Terms and Conditions", href: "/legal/terms" },
-      { text: "Cancellation", href: "/legal/cancellation" }
+      { text: "Terms and Conditions", href: "/terms-and-conditions" },
+      { text: "Privacy", href: "/privacy" }
     ]
   }
 ];

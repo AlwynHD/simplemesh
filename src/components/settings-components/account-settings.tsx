@@ -129,7 +129,7 @@ const AccountSettings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Link href="/terms" className="block">
+            <Link href="/terms-and-conditions" className="block">
               <div className="flex items-center rounded-md p-2.5 bg-accent/40 hover:bg-accent/60 transition-colors">
                 <FileText className="mr-2 h-4 w-4 text-primary/80" />
                 <p className="text-sm font-medium">Terms & Conditions</p>
