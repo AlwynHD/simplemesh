@@ -7,7 +7,7 @@ import { Canvas } from "@react-three/fiber";
 import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-
+import Link from "next/link";
 // Add this Model component above your main component or in a separate file
 function Model({ url }: { url: string }) {
   const group = useRef<THREE.Group>();
@@ -22,8 +22,10 @@ function Model({ url }: { url: string }) {
 
   return <primitive ref={group} object={scene} scale={2.0} position={[0, 0, 0]} />;
 }
-
-const HeroSection = () => {
+interface HeroSectionProps {
+  openModal: () => void;
+}
+const HeroSection = ({ openModal }: HeroSectionProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -63,16 +65,16 @@ const HeroSection = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <button className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
+              <button onClick={openModal} className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                 Start Creating
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 4L10.59 5.41L16.17 11H4V13H16.17L10.59 18.59L12 20L20 12L12 4Z" fill="currentColor" />
                 </svg>
               </button>
 
-              <button className="px-6 py-3 rounded-lg border border-border bg-background/80 backdrop-blur-sm hover:bg-secondary/10 text-foreground font-medium transition-all">
+              <Link  href='/#examples'className="px-6 py-3 rounded-lg border border-border bg-background/80 backdrop-blur-sm hover:bg-secondary/10 text-foreground font-medium transition-all">
                 See Examples
-              </button>
+              </Link>
             </div>
 
             <div className="pt-6 border-t border-border/30 flex items-center gap-4">

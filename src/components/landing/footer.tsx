@@ -1,7 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export function Footer() {
+interface FooterProps {
+  openModal?: () => void;
+}
+
+export function Footer({ openModal }: FooterProps) {
+  
   return (
     <footer className="bg-background border-t border-border py-16">
       <div className="container mx-auto px-4 md:px-6">
@@ -18,6 +23,7 @@ export function Footer() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={openModal}
               className="px-5 py-2.5 bg-primary text-primary-foreground rounded-md font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors"
             >
               Start creating

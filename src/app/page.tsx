@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { LoginWithLogo } from '@/components/login-components/login-with-logo'
 import Modal from '@/components/modal'
 import { motion } from "framer-motion"; // Added for better animations
-import { Disclosure } from '@headlessui/react'
 
 import HeroSection from '@/components/landing/hero'
 import GallerySection from '@/components/landing/gallery'
@@ -114,7 +113,7 @@ export default function Home() {
                         </nav>
 
                         <Link href="" onClick={openModal} className="group relative inline-flex items-center justify-center px-6 py-3 text-base font-medium leading-6 text-[hsl(var(--foreground))] transition-all duration-200 ease-in-out bg-[hsl(var(--secondary))]/5 border border-[hsl(var(--border))]/30 rounded-lg hover:bg-[hsl(var(--secondary))]/20 hover:border-[hsl(var(--border))]/50">
-                            <span className="relative z-10">Launch</span>
+                            <span className="relative z-10">Login</span>
                             <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="ml-2 h-5 w-5 text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors duration-200">
                                 <path d="M5 3v16h16"></path>
                                 <path d="m5 19 6-6"></path>
@@ -172,7 +171,7 @@ export default function Home() {
                                 onClick={openModal}
                                 className="flex items-center justify-center w-full py-2.5 px-4 bg-[hsl(var(--secondary))]/5 border border-[hsl(var(--border))]/30 rounded-lg text-[hsl(var(--foreground))] font-medium hover:bg-[hsl(var(--secondary))]/20 hover:border-[hsl(var(--border))]/50 transition-all duration-200"
                             >
-                                <span>Open Studio</span>
+                                <span>Login</span>
                                 <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="ml-2 h-5 w-5">
                                     <path d="M5 3v16h16"></path>
                                     <path d="m5 19 6-6"></path>
@@ -185,10 +184,10 @@ export default function Home() {
                 </div>
             </header>
 
-            <HeroSection />
+            <HeroSection openModal={openModal} />
 
             <section id='examples'>
-                <GallerySection/>
+                <GallerySection />
 
             </section>
 
@@ -281,6 +280,7 @@ export default function Home() {
                             <motion.button
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
+                                onClick={openModal}
                                 className="px-8 py-4 bg-primary text-primary-foreground rounded-xl text-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 group relative overflow-hidden"
                             >
                                 <span className="relative z-10">Start Creating Now</span>
@@ -439,8 +439,7 @@ export default function Home() {
 
 
             {/* 9. Footer */}
-            <Footer />
-
+            <Footer openModal={openModal} />
 
             {/* Login Popup */}
             <Modal isOpen={isOpen} onClose={closeModal}>
