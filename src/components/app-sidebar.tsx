@@ -39,7 +39,7 @@ const data = {
 
     {
       title: "Guide",
-      url: "/guide",
+      url: "/dashboard/guide",
       icon: BookText,
     }
   ],
