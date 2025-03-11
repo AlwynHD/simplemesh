@@ -81,12 +81,12 @@ export async function POST(req: Request) {
 
         let credits = 0
 
-        if (priceId === 'price_1Qlr2FCcCkxwgwE8Q3hZmzZ8') { //personal
+        if (priceId === 'price_1R1UlDCcCkxwgwE8lQhnxKdP') { //personal
             credits = 1000;
-        } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro 
+        } else if (priceId === 'price_1R1UlHCcCkxwgwE8i0BdR3su') { //pro 
             credits = 2500;
         }
-        else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') { //enterprise
+        else if (priceId === 'price_1R1UlJCcCkxwgwE8i9YRf1sa') { //enterprise
             credits = 10000;
         }
 

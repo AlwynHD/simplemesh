@@ -24,14 +24,14 @@ const plans: Plan[] = [
         monthlyPrice: 9,
         monthlyCreditsPrice: 0.9,
         features: ["1000 Credits Monthly", "Image to 3D", "Text to 3D"],
-        priceID: "price_1Qlr2FCcCkxwgwE8Q3hZmzZ8",
+        priceID: "price_1R1UlDCcCkxwgwE8lQhnxKdP",
     },
     {
         name: "Pro",
         monthlyPrice: 19,
         monthlyCreditsPrice: 0.76,
         features: ["2500 Credits Monthly", "Image to 3D", "Text to 3D"],
-        priceID: "price_1QpDdwCcCkxwgwE8UJd7R42A",
+        priceID: "price_1R1UlHCcCkxwgwE8i0BdR3su",
         popular: true,
     },
     {
@@ -39,7 +39,7 @@ const plans: Plan[] = [
         monthlyPrice: 99,
         monthlyCreditsPrice: 0.65,
         features: ["10000 Credits Monthly", "Image to 3D", "Text to 3D"],
-        priceID: "price_1QpDhYCcCkxwgwE8RizApTLU",
+        priceID: "price_1R1UlJCcCkxwgwE8i9YRf1sa",
     },
 ]
 
