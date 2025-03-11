@@ -1,8 +1,8 @@
 import React from 'react';
-import { FiBox, FiLayers, FiPackage, FiRefreshCw, FiFileText } from 'react-icons/fi';
-import { BiCube, BiPalette, BiWorld, BiPaintRoll } from 'react-icons/bi';
+import { FiBox, FiRefreshCw, FiFileText } from 'react-icons/fi';
+import { BiCube, BiPalette, BiPaintRoll } from 'react-icons/bi';
 import { HiOutlineCube, HiOutlineLockClosed, HiOutlineAdjustments } from 'react-icons/hi';
-import { IoImagesOutline, IoSettingsOutline, IoGridOutline, IoPeopleOutline } from 'react-icons/io5';
+import { IoImagesOutline, IoGridOutline, IoPeopleOutline } from 'react-icons/io5';
 import { motion } from 'framer-motion';
 
 const FeaturesGrid = () => {

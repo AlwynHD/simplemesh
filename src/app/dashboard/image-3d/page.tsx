@@ -41,7 +41,23 @@ export default function Image3D() {
 
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [modelId, setModelId] = useState<string | null>(null)
-
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    
+    if (isLoading && startTime) {
+      timer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const seconds = Math.floor((elapsed / 1000) % 60);
+        const minutes = Math.floor((elapsed / 1000 / 60) % 60);
+        
+        setElapsedTime(`${minutes}m ${seconds}s`);
+      }, 1000); // Update every second
+    }
+    
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isLoading, startTime]);
 
   // Add this polling effect
   useEffect(() => {
