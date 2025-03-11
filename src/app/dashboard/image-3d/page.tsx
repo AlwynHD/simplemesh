@@ -188,8 +188,7 @@ export default function Image3D() {
             seed: seed,
           })
 
-          // Clear timers as we got a response
-
+        
 
           if (result?.error) {
             setError(result.error)

@@ -1,10 +1,8 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { text3D } from '@/components/actions/featuresActions'
+import { useState, useEffect, useRef } from 'react'
 import { useCreditStore } from '@/stores/creditStore'
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
-import ModelViewer from '@/components/ModelViewer'
 
 // UI Components
 import {
@@ -18,9 +16,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import ModelViewer from "@/components/ModelViewer"
 
 // Icons
 import { Hash, Loader, RefreshCw, Wand2 } from 'lucide-react'
+
+// Actions
+import { text3D, checkReplicateStatus } from "@/components/actions/featuresActions"
 
 export default function Text3D() {
   // State
@@ -29,29 +31,75 @@ export default function Text3D() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [startTime, setStartTime] = useState<number | null>(null)
-  const [containerStatus, setContainerStatus] = useState<'unknown' | 'cold' | 'warm'>('unknown')
   const [elapsedTime, setElapsedTime] = useState<string>('')
   const [modelUrl, setModelUrl] = useState<string>()
   
+  const [predictionId, setPredictionId] = useState<string | null>(null)
+  const [modelId, setModelId] = useState<string | null>(null)
+  
   const setCredits = useCreditStore(state => state.setCredits)
 
-  // Track elapsed time during generation
+  // Track elapsed time during generation with minutes and seconds
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null
+    let timer: NodeJS.Timeout | null = null;
 
     if (isLoading && startTime) {
-      intervalId = setInterval(() => {
-        const seconds = Math.floor((Date.now() - startTime) / 1000)
-        setElapsedTime(`${seconds}s`)
-      }, 1000)
-    } else {
-      setElapsedTime('')
+      timer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const seconds = Math.floor((elapsed / 1000) % 60);
+        const minutes = Math.floor((elapsed / 1000 / 60) % 60);
+
+        setElapsedTime(`${minutes}m ${seconds}s`);
+      }, 1000); // Update every second
     }
 
     return () => {
-      if (intervalId) clearInterval(intervalId)
+      if (timer) clearInterval(timer);
+    };
+  }, [isLoading, startTime]);
+
+  // Add polling effect for checking status
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (predictionId && isLoading) {
+      intervalId = setInterval(async () => {
+        try {
+          const result = await checkReplicateStatus(predictionId);
+
+          if (result.status === 'failed' || result.status === 'canceled') {
+            clearInterval(intervalId!);
+            setError('Model generation failed');
+            setIsLoading(false);
+          }
+
+          if (result.status === 'succeeded') {
+            clearInterval(intervalId!);
+
+            // Use the URL directly from Replicate
+            if (result.output?.model_file) {
+              setModelUrl(result.output.model_file);
+
+              // Generate a thumbnail
+              if (modelId) {
+                generateAndUploadThumbnail(result.output.model_file, modelId);
+              }
+            } else {
+              setError("No model URL returned");
+            }
+
+            setIsLoading(false);
+          }
+        } catch (err) {
+          console.error('Error polling status:', err);
+        }
+      }, 5000); // Check every 5 seconds
     }
-  }, [isLoading, startTime])
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [predictionId, isLoading, modelId]);
 
   const handleGenerate = async () => {
     try {
@@ -62,39 +110,17 @@ export default function Text3D() {
 
       setIsLoading(true)
       setStartTime(Date.now())
-      setContainerStatus('unknown')
       setError(null)
-
-      const loadingRef = { current: true }
-
-      // Check container status after 20 seconds
-      const statusTimer = setTimeout(() => {
-        if (loadingRef.current) {
-          setContainerStatus('cold')
-        }
-      }, 20000)
-
-      // If response comes back within 5 seconds, mark container as warm
-      const warmTimer = setTimeout(() => {
-        if (loadingRef.current) {
-          setContainerStatus('warm')
-        }
-      }, 5000)
 
       try {
         const result = await text3D({
           prompt: prompt,
           seed: seed,
-          credits: 0 // This will be checked server-side
         })
-
-        clearTimeout(statusTimer)
-        clearTimeout(warmTimer)
 
         if (result?.error) {
           setError(result.error)
           setIsLoading(false)
-          loadingRef.current = false
           return
         }
 
@@ -102,27 +128,19 @@ export default function Text3D() {
           setCredits(result.updatedCredits)
         }
 
-        if (result.modelUrl && result.modelId) {
-          const urlString = result.modelUrl.toString()
-          setModelUrl(urlString)
-
-          generateAndUploadThumbnail(urlString, result.modelId)
-            .catch(error => {
-              console.error("Error in thumbnail workflow:", error)
-            })
-        } else {
-          setError("No model URL returned")
+        // Store the prediction ID and model ID for polling
+        if (result.predictionId) {
+          setPredictionId(result.predictionId)
         }
 
-        setIsLoading(false)
-        loadingRef.current = false
+        if (result.modelId) {
+          setModelId(result.modelId)
+        }
+
       } catch (err) {
-        clearTimeout(statusTimer)
-        clearTimeout(warmTimer)
         console.error(err)
         setError('Failed to generate model')
         setIsLoading(false)
-        loadingRef.current = false
       }
     } catch (err) {
       console.error(err)
@@ -258,7 +276,7 @@ export default function Text3D() {
                 <span className="text-sm">elapsed</span>
               </div>
               
-              {containerStatus === 'cold' && (
+              {startTime && (Date.now() - startTime) / 1000 > 20 && (
                 <p className="text-muted-foreground mt-4 text-sm">
                   Your model is in queue. This may take up to 5 minutes.
                 </p>

@@ -119,7 +119,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
 }
 
 
-export async function text3D(input: { prompt: string, seed?: number, credits: number }): Promise<{ updatedCredits?: number; modelUrl?: string; modelId?: string; error?: string }> {
+export async function text3D(input: { prompt: string, seed?: number }): Promise<{ updatedCredits?: number; modelUrl?: string; modelId?: string; predictionId?: string; error?: string }> {
   try {
     const supabase = createClientServer()
     const cost = 40
@@ -190,64 +190,41 @@ export async function text3D(input: { prompt: string, seed?: number, credits: nu
         }
       }
     ) as PredictImageOutput;
+
     console.log(outputImage)
-    const output = await replicate.run(
-      "alwynhd/trellis_alwyn:b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
-      {
-        input: {
-          images: [outputImage[0]],
-          seed: input.seed !== undefined ? input.seed : 0,
-          texture_size: 1024,
-          mesh_simplify: 0.95,
-          generate_color: false,
-          generate_model: true,
-          randomize_seed: input.seed === undefined,
-          generate_normal: false,
-          save_gaussian_ply: false,
-          ss_sampling_steps: 12,
-          slat_sampling_steps: 12,
-          return_no_background: false,
-          ss_guidance_strength: 7.5,
-          slat_guidance_strength: 3
-        }
-      }
-    ) as PredictOutput;
     const fileId = uuidv4();
-    // Upload to S3 if model was generated
-    if (output.model_file) {
-      try {
-        // Download file from Replicate
-        const fileBuffer = await downloadFile(output.model_file);
 
-        // Generate UUID and path
+    await storeModelMetadata(userId, fileId, outputImage[0]) //do this before as it doesnt matter if before or not
 
-        const fileKey = `users/${userId}/models/${fileId}.glb`;
 
-        // Upload to S3
-        const command = new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME!,
-          Key: fileKey,
-          Body: fileBuffer,
-          ContentType: 'model/gltf-binary'
-        });
+    const webhookUrl = `https://www.simplemesh.ai/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
+    
+    const prediction = await replicate.predictions.create({
+      version: "b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
+      input: {
+        images: [outputImage[0]],
+        seed: input.seed !== undefined ? input.seed : 0,
+        texture_size: 1024,
+        mesh_simplify: 0.95,
+        generate_color: false,
+        generate_model: true,
+        randomize_seed: input.seed === undefined,
+        generate_normal: false,
+        save_gaussian_ply: false,
+        ss_sampling_steps: 12,
+        slat_sampling_steps: 12,
+        return_no_background: false,
+        ss_guidance_strength: 7.5,
+        slat_guidance_strength: 3
+      },
+      webhook: webhookUrl,
+      webhook_events_filter: ["completed"]
+    });
 
-        await s3Client.send(command);
-        await storeModelMetadata(
-          userId,
-          fileId,
-          outputImage[0]
-        );
-        // Important: Keep returning the original Replicate URL instead of the S3 URL
-        // Don't modify output.model_file to prevent the S3 URL from being used
-      } catch (uploadError) {
-        console.error('Error uploading to S3:', uploadError);
-      }
-    }
 
-    // Return the original Replicate URL
     return {
       updatedCredits,
-      modelUrl: output.model_file,
+      predictionId: prediction.id,
       modelId: fileId
     };
   } catch (err) {
@@ -423,6 +400,7 @@ export async function uploadThumbnail(formData: FormData): Promise<{ success: bo
 
 
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { output } from 'three/src/nodes/TSL.js'
 
 export async function deleteModel(modelId: string): Promise<{ success: boolean; error?: string }> {
   try {
