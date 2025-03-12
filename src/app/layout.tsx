@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
+import Clarity from '@microsoft/clarity';
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -13,7 +13,7 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
-
+const projectId= "qmt26bxy0k"
 export const metadata: Metadata = {
   title: "Simple Mesh - Create 3D models from images",
   description: "Transform your images and text into high quality 3D models effortlessly. Used by game developers and 3D artists alike.",
@@ -25,11 +25,13 @@ export const metadata: Metadata = {
     apple: '/favicon/Logo-Fox-Light.png',
   },
 };
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  Clarity.init(projectId);
   return (
     <html lang="en">
       <body
