@@ -51,7 +51,7 @@ export async function POST(req: Request) {
             credits = 1000;
         } else if (priceId === 'price_1QpDdwCcCkxwgwE8UJd7R42A') { //pro 
             credits = 2500;
-        } else if (priceId === 'price_1QpDhYCcCkxwgwE8RizApTLU') { //enterprise
+        } else if (priceId === 'price_1R1dFzCcCkxwgwE88AGetiKp') { //enterprise
             credits = 10000;
         }
         
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         } else if (priceId === 'price_1R1UlHCcCkxwgwE8i0BdR3su') { //pro 
             credits = 2500;
         }
-        else if (priceId === 'price_1R1UlJCcCkxwgwE8i9YRf1sa') { //enterprise
+        else if (priceId === 'price_1R1dFzCcCkxwgwE88AGetiKp') { //enterprise
             credits = 10000;
         }
 
