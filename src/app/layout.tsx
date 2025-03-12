@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
+import Script from "next/script";
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -49,6 +49,26 @@ export default function RootLayout({
             `
           }}
         />
+
+
+
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-M69EEW396C"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-M69EEW396C');
+    `
+          }}
+        />
+
+
+
       </head>
       <body
 
