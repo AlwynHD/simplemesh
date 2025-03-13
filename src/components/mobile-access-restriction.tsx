@@ -7,8 +7,11 @@ import { RotateCw, Laptop, AlertCircle } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 
 // Define allowed paths that can be accessed on any device
-const UNRESTRICTED_PATHS = ['/dashboard', '/dashboard/models']
+const RESTRICTED_PATHS = [
+  '/dashboard/image-3d',
+  '/dashboard/text-3d',
 
+]
 export function MobileAccessRestriction() {
   const [open, setOpen] = useState(false)
   const [isMobileDevice, setIsMobileDevice] = useState(false)
@@ -17,8 +20,7 @@ export function MobileAccessRestriction() {
   const router = useRouter()
 
   // Determine if current path is restricted
-  const isRestrictedPath = !UNRESTRICTED_PATHS.includes(pathname) && pathname.startsWith('/dashboard')
-
+  const isRestrictedPath = RESTRICTED_PATHS.some(path => pathname.startsWith(path))
   useEffect(() => {
     const checkDevice = () => {
       if (typeof window === 'undefined') return
