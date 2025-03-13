@@ -14,6 +14,9 @@ import FeaturesGrid from '@/components/landing/featuresGrid'
 import TestimonialSection from '@/components/landing/testimonials'
 import { FAQSection } from '@/components/landing/faq'
 import { Footer } from '@/components/landing/footer'
+
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from 'next/navigation'
 export default function Home() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [animatedItems, setAnimatedItems] = useState<{ [key: string]: boolean }>({});
@@ -43,6 +46,19 @@ export default function Home() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [animatedItems]);
 
+    const router = useRouter();
+    useEffect(() => {
+        const checkUser = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase.auth.getUser();
+
+            if (data?.user) {
+                router.replace('/dashboard');
+            }
+        }
+
+        checkUser();
+    }, [router]);
     return (
         <div className="relative min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
             {/* Top notification bar */}
