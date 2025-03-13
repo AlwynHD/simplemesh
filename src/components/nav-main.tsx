@@ -1,5 +1,5 @@
+// In src/components/nav-main.tsx
 "use client"
-
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
@@ -34,11 +35,18 @@ export function NavMain({
   }[]
 }) {
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
+  
+  const handleNavigation = (url: string) => {
+    if (isMobile) {
+      // Close the mobile drawer when navigation occurs
+      setOpenMobile(false);
+    }
+    router.push(url);
+  };
 
   return (
     <SidebarGroup>
-      {/* <SidebarGroupLabel>Core Features</SidebarGroupLabel> */}
-
       <SidebarMenu>
         {items.map((item) => {
           if (item.items && item.items.length > 0) {
@@ -66,7 +74,7 @@ export function NavMain({
                               href={subItem.url}
                               onClick={(e) => {
                                 e.preventDefault();
-                                router.push(subItem.url);
+                                handleNavigation(subItem.url);
                               }}
                             >
                               <span>{subItem.title}</span>
@@ -87,11 +95,9 @@ export function NavMain({
                     href={item.url}
                     onClick={(e) => {
                       e.preventDefault();
-                      // Use the absolute path directly since we've defined them fully in data
-                      router.push(item.url);
+                      handleNavigation(item.url);
                     }}
                   >
-
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </a>
@@ -102,5 +108,5 @@ export function NavMain({
         })}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }
