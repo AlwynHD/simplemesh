@@ -39,7 +39,7 @@ const plans: Plan[] = [
         monthlyPrice: 99,
         monthlyCreditsPrice: 0.65,
         features: ["10000 Credits Monthly", "Image to 3D", "Text to 3D"],
-        priceID: "price_1R1UlJCcCkxwgwE8i9YRf1sa",
+        priceID: "price_1R1dFzCcCkxwgwE88AGetiKp",
     },
 ]
 
