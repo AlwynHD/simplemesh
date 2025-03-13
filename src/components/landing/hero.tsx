@@ -9,6 +9,8 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import Link from "next/link";
 import WebGLGuard from "@/components/WebGLGuard";
+import { Hammer, Anvil } from "lucide-react";
+
 // Add this Model component above your main component or in a separate file
 function Model({ url }: { url: string }) {
   const group = useRef<THREE.Group>();
@@ -136,20 +138,13 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
               </Canvas>
               </WebGLGuard>
 
-              {/* Floating element 1 */}
               <div className="absolute -top-4 -left-4 bg-background rounded-lg p-3 shadow-lg animate-float">
-                <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" />
-                  <path d="M15 12L10 8V16L15 12Z" fill="currentColor" />
-                </svg>
+                <Hammer className="w-8 h-8 text-primary" />
               </div>
 
-              {/* Floating element 2 */}
+              {/* Floating element 2 - AI brain icon */}
               <div className="absolute -bottom-4 -right-4 bg-background rounded-lg p-3 shadow-lg animate-float-delayed">
-                <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 9L12 3L21 9V21H3V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Anvil className="w-8 h-8 text-primary" />
               </div>
             </div>
 
