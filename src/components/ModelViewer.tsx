@@ -29,7 +29,7 @@ import {
 import { HexColorPicker, HexColorInput } from "react-colorful"
 import { ModelTopology } from "@/components/ModelTopology";
 import { Switch } from "@/components/ui/switch"; // Import Switch component
-
+import WebGLGuard from '@/components/WebGLGuard';
 // Valid environment options for Stage
 type EnvironmentType = "lobby" | "apartment" | "city" | "dawn" | "forest" | "night" | "park" | "studio" | "sunset" | "warehouse";
 
@@ -470,6 +470,7 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
     <div className="w-full h-full relative">
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <div className="w-full h-full">
+          <WebGLGuard>
           <Canvas 
             shadows 
             camera={{ position: [5, 5, 5], fov: 75 }}
@@ -534,6 +535,7 @@ export default function ModelViewer({ modelUrl }: ModelViewerProps) {
               />
             </Suspense>
           </Canvas>
+          </WebGLGuard>
         </div>
       </ErrorBoundary>
 

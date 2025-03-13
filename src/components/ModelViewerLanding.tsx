@@ -2,7 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-
+import WebGLGuard from './WebGLGuard';
 function Model({ url, enhanceContrast = false }: { url: string, enhanceContrast?: boolean }) {
   const { scene } = useGLTF(url);
   
@@ -31,6 +31,7 @@ function Model({ url, enhanceContrast = false }: { url: string, enhanceContrast?
 export default function ModelViewer({ modelPath }: { modelPath: string }) {
   return (
     <div className="w-full h-[50vh]">
+      <WebGLGuard>
       <Canvas 
         camera={{ position: [0, 0, 2], fov: 45 }}
         gl={{ outputColorSpace: THREE.SRGBColorSpace }}
@@ -57,6 +58,7 @@ export default function ModelViewer({ modelPath }: { modelPath: string }) {
           <OrbitControls autoRotate />
         </Suspense>
       </Canvas>
+      </WebGLGuard>
     </div>
   );
 }

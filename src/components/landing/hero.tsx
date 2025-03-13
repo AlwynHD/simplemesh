@@ -8,6 +8,7 @@ import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import Link from "next/link";
+import WebGLGuard from "@/components/WebGLGuard";
 // Add this Model component above your main component or in a separate file
 function Model({ url }: { url: string }) {
   const group = useRef<THREE.Group>();
@@ -112,6 +113,7 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
             transition={{ duration: 0.7, delay: 0.4 }}
           >
             <div className="relative z-10 aspect-square max-w-md mx-auto rounded-xl shadow-2xl object-cover">
+              <WebGLGuard>
               <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
                 <Suspense fallback={null}>
                   <ambientLight intensity={0.5} />
@@ -132,6 +134,7 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                   {/* Removed OrbitControls completely */}
                 </Suspense>
               </Canvas>
+              </WebGLGuard>
 
               {/* Floating element 1 */}
               <div className="absolute -top-4 -left-4 bg-background rounded-lg p-3 shadow-lg animate-float">
