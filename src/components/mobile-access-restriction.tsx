@@ -15,43 +15,43 @@ export function MobileAccessRestriction() {
   const [isPortrait, setIsPortrait] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  
+
   // Determine if current path is restricted
   const isRestrictedPath = !UNRESTRICTED_PATHS.includes(pathname) && pathname.startsWith('/dashboard')
-  
+
   useEffect(() => {
     const checkDevice = () => {
       if (typeof window === 'undefined') return
-      
+
       const portrait = window.innerHeight > window.innerWidth
       const isMobile = window.innerWidth < 768
-      
+
       setIsPortrait(portrait)
       setIsMobileDevice(isMobile)
       setOpen(isMobile && portrait && isRestrictedPath)
     }
-    
+
     checkDevice()
-    
+
     window.addEventListener('resize', checkDevice)
     window.addEventListener('orientationchange', checkDevice)
-    
+
     return () => {
       window.removeEventListener('resize', checkDevice)
       window.removeEventListener('orientationchange', checkDevice)
     }
   }, [isRestrictedPath, pathname])
-  
+
   const handleRedirectToDashboard = () => {
     router.push('/dashboard')
     setOpen(false)
   }
-  
+
   if (!isRestrictedPath) return null
-  
+
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(value) => {
         // Only allow closing if no longer in portrait mode or no longer on restricted path
         if (!isPortrait || !isRestrictedPath) {
@@ -61,12 +61,13 @@ export function MobileAccessRestriction() {
     >
       <DialogContent className="sm:max-w-sm p-6 rounded-xl max-w-sm">
         <DialogHeader className="flex flex-col items-center text-center space-y-3">
-          <div className="bg-blue-50 rounded-full p-3 mb-2">
-            <RotateCw className="h-6 w-6 text-blue-500" />
+          <div className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-full p-3 mb-2">
+            <RotateCw
+              className="h-7 w-7 text-orange-400"/>
           </div>
           <DialogTitle className="text-lg font-semibold">Limited Mobile Experience</DialogTitle>
         </DialogHeader>
-        
+
         <div className="text-center space-y-3 py-3">
           <p className="text-muted-foreground text-sm">
             This section works best on tablet or desktop devices. You can rotate your phone to landscape mode, but some features may be difficult to use.
@@ -88,7 +89,7 @@ export function MobileAccessRestriction() {
         </div>
 
         <DialogFooter className="mt-2">
-          <Button 
+          <Button
             onClick={handleRedirectToDashboard}
             className="w-full"
             variant="outline"
