@@ -28,13 +28,7 @@ import Link from "next/link"
 // This is sample data.
 import { Lock } from "lucide-react"
 const data = {
-  teams: [
-    {
-      name: "Simple Mesh",
-      logoPath: "/favicon/Logo-Fox-Light.svg",
-      plan: "Free",
-    },
-  ],
+
   guide: [
 
     {
@@ -82,7 +76,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
+        <Link href="/dashboard">
         <LogoTitle logoPath="/favicon/Logo-Fox-Light.svg" title="Simple Mesh" />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
