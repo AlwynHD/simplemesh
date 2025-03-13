@@ -14,6 +14,7 @@ import { redirect } from "next/navigation"
 
 import { getUserBilling, getUserPlan } from "@/components/actions/billingActions"
 import { TopBar } from "@/components/TopBar"
+import { MobileAccessRestriction } from "@/components/mobile-access-restriction"
 export default async function DashboardLayout({
     children,
 }: Readonly<{
@@ -44,6 +45,7 @@ export default async function DashboardLayout({
                     </div>
                 </div>
             </SidebarInset>
+            <MobileAccessRestriction />
         </SidebarProvider>
     )
 }
