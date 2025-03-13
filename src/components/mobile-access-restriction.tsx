@@ -61,8 +61,8 @@ export function MobileAccessRestriction() {
         }
       }}
     >
-      <DialogContent className="sm:max-w-sm p-6 rounded-xl max-w-sm">
-        <DialogHeader className="flex flex-col items-center text-center space-y-3">
+      <DialogContent hideCloseButton className="sm:max-w-sm p-6 rounded-xl max-w-sm">
+      <DialogHeader className="flex flex-col items-center text-center space-y-3">
           <div className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-full p-3 mb-2">
             <RotateCw
               className="h-7 w-7 text-orange-400"/>
