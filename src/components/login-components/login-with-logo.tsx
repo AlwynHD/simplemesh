@@ -15,8 +15,8 @@ export function LoginWithLogo() {
   const [isOtpSent, setIsOtpSent] = useState(false)
   const [error, setError] = useState('')
   const [otpValue, setOtpValue] = useState('')
-
   const [isLoading, setIsLoading] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
 
   const handleReqOTP = async (formData: FormData) => {
     const emailValue = formData.get('email') as string
@@ -36,12 +36,15 @@ export function LoginWithLogo() {
 
   const handleVerifyOTP = async (formData: FormData) => {
     formData.append('email', email)
+    setIsVerifying(true)
     try {
       await verifyotp(formData)
       setError('')
       // Handle successful verification (e.g., redirect to dashboard)
     } catch (err) {
       setError('Invalid OTP. Please try again.' + err)
+    } finally {
+      setIsVerifying(false)
     }
   }
 
@@ -69,19 +72,19 @@ export function LoginWithLogo() {
       <CardContent className="pb-3">
         {!isOtpSent ? (
           <form action={handleReqOTP}>
-          <div className="flex flex-col space-y-1">
-            <Label htmlFor="email" className="text-sm">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <SubmitButton isLoading={isLoading} />
-        </form>
+            <div className="flex flex-col space-y-1">
+              <Label htmlFor="email" className="text-sm">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <SubmitButton isLoading={isLoading} text="Continue" />
+          </form>
         ) : (
           <form action={handleVerifyOTP}>
             <div className="flex flex-col space-y-1">
@@ -94,9 +97,10 @@ export function LoginWithLogo() {
                 value={otpValue}
                 onChange={(e) => setOtpValue(e.target.value)} 
                 required
+                disabled={isVerifying}
               />
             </div>
-            <Button type="submit" className="w-full mt-3">Verify OTP</Button>
+            <SubmitButton isLoading={isVerifying} text="Verify OTP" />
             <p className="text-xs mt-2 text-center">
               Didn&apos;t receive the code? <button type="button" onClick={() => setIsOtpSent(false)} className="text-primary hover:underline">Resend OTP</button>
             </p>
@@ -133,17 +137,17 @@ export function LoginWithLogo() {
   )
 }
 
-function SubmitButton({ isLoading }: { isLoading: boolean }) {
+function SubmitButton({ isLoading, text }: { isLoading: boolean, text: string }) {
   const { pending } = useFormStatus()
   return (
     <Button type="submit" className="w-full mt-3" disabled={isLoading || pending}>
       {isLoading || pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Continue
+          {text}
         </>
       ) : (
-        'Continue'
+        text
       )}
     </Button>
   )
