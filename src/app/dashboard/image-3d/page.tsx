@@ -168,6 +168,11 @@ export default function Image3D() {
         return
       }
 
+
+      setPredictionId(null)
+      setModelId(null)
+      setModelUrl(undefined)
+      
       setIsLoading(true)
       setStartTime(Date.now())
       setError(null)

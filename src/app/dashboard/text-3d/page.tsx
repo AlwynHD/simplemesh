@@ -108,7 +108,9 @@ export default function Text3D() {
         setError('Please enter a prompt')
         return
       }
-
+      setPredictionId(null)
+      setModelId(null)
+      setModelUrl(undefined)
       setIsLoading(true)
       setStartTime(Date.now())
       setError(null)

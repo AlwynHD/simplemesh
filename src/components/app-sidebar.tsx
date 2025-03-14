@@ -75,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     checkPlan()
   }, [])
 
-  console.log(state);
+  
 
   return (
     <Sidebar collapsible="icon" {...props}>
