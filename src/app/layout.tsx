@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
-    
+
   return (
     <html lang="en">
 
@@ -70,6 +70,7 @@ export default function RootLayout({
         />
 
 
+        <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 
       </head>
       <body
