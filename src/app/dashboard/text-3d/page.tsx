@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useCreditStore } from '@/stores/creditStore'
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
 
