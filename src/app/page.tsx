@@ -453,7 +453,7 @@ export default function Home() {
             {/* 8. FAQ Section */}
             <FAQSection />
 
-
+           
             {/* 9. Footer */}
             <Footer openModal={openModal} />
 

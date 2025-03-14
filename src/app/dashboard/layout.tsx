@@ -15,13 +15,15 @@ import { redirect } from "next/navigation"
 import { getUserBilling, getUserPlan } from "@/components/actions/billingActions"
 import { TopBar } from "@/components/TopBar"
 import { MobileAccessRestriction } from "@/components/mobile-access-restriction"
+import { isUserOnFreePlan } from "@/components/actions/billingActions"
+import  FreePlanOverlayWrapper  from "@/components/pricingOverlay/freePlanOverlayWrapper"
 export default async function DashboardLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
     const supabase = createClientServer()
-
+    
     const { data, error } = await supabase.auth.getUser()
     if (error || !data?.user) {
         redirect('/login')
@@ -31,6 +33,10 @@ export default async function DashboardLayout({
         getUserBilling(),
         getUserPlan()
     ])
+
+    
+    const isFreePlan = await isUserOnFreePlan()
+    console.log(isFreePlan)
 
     return (
         <SidebarProvider>
@@ -46,6 +52,7 @@ export default async function DashboardLayout({
                 </div>
             </SidebarInset>
             <MobileAccessRestriction />
+            <FreePlanOverlayWrapper isFreePlan={isFreePlan} />
         </SidebarProvider>
     )
 }

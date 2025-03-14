@@ -27,6 +27,9 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 // This is sample data.
 import { Lock } from "lucide-react"
+import PricingOverlay from '@/components/pricingOverlay/pricingOverlay' // Add this import
+
+
 const data = {
 
   guide: [
@@ -61,6 +64,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isFreePlan, setIsFreePlan] = useState(false)
   const { state } = useSidebar();
+  const [showPricingOverlay, setShowPricingOverlay] = useState(false)
 
 
   useEffect(() => {
@@ -77,39 +81,47 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <Link href="/dashboard">
-        <LogoTitle logoPath="/favicon/Logo-Fox-Light.svg" title="Simple Mesh" />
+          <LogoTitle logoPath="/favicon/Logo-Fox-Light.svg" title="Simple Mesh" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
       {isFreePlan && state === 'expanded' && (
-        <Link
-          href="/pricing"
-          className="mx-4 my-4 block hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
-          aria-label="Upgrade to full plan for full feature access"
-        >
-          <div className="p-4 rounded-md bg-primary/10 text-center text-primary shadow-sm border border-primary/20 hover:bg-primary/20 cursor-pointer">
-            {/* Sparkles Icon */}
-            <div className="flex justify-center mb-3">
-              <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
-            </div>
+        <>
+          <div
+            onClick={() => setShowPricingOverlay(true)}
+            className="mx-4 my-4 block hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Upgrade to full plan for full feature access"
+          >
+            <div className="p-4 rounded-md bg-primary/10 text-center text-primary shadow-sm border border-primary/20 hover:bg-primary/20 cursor-pointer">
+              {/* Sparkles Icon */}
+              <div className="flex justify-center mb-3">
+                <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
+              </div>
 
-            {/* Friendly Heading */}
-            <h2 className="text-base font-semibold text-primary">Free Plan Access</h2>
+              {/* Friendly Heading */}
+              <h2 className="text-base font-semibold text-primary">Free Plan Access</h2>
 
-            {/* Updated Subtext */}
-            <p className="mt-2 text-xs text-muted-foreground">
-              Upgrade to access our full set of features.
-            </p>
+              {/* Updated Subtext */}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Upgrade to access our full set of features.
+              </p>
 
-            {/* Upgrade Now Button */}
-            <div className="inline-flex items-center justify-center mt-2 px-3 py-1.5 bg-primary text-white rounded-md transition-colors text-sm hover:bg-primary/90">
-              <Lock className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              Upgrade Now
+              {/* Upgrade Now Button */}
+              <div className="inline-flex items-center justify-center mt-2 px-3 py-1.5 bg-primary text-white rounded-md transition-colors text-sm hover:bg-primary/90">
+                <Lock className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                Upgrade Now
+              </div>
             </div>
           </div>
-        </Link>
+
+          {/* Add the PricingOverlay component */}
+          <PricingOverlay
+            isOpen={showPricingOverlay}
+            onClose={() => setShowPricingOverlay(false)}
+          />
+        </>
       )}
 
       <NavMain items={data.guide} />
