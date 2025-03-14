@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label"
 import ModelViewer from "@/components/ModelViewer"
 
 // Icons
-import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash } from 'lucide-react'
+import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash, Coins } from 'lucide-react'
 
 // Actions
 import { image3D, checkReplicateStatus } from "@/components/actions/featuresActions"
@@ -37,6 +37,9 @@ export default function Image3D() {
 
   const dropzoneRef = useRef<HTMLDivElement>(null)
   const setCredits = useCreditStore(state => state.setCredits)
+
+  // Example price - this would typically come from your API or config
+  const featureCreditCost = 35
 
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [modelId, setModelId] = useState<string | null>(null)
@@ -331,6 +334,20 @@ export default function Image3D() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Leave empty for random results</p>
+              </div>
+
+              {/* Credit Pricing Section */}
+              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">Credit Cost</span>
+                  </div>
+                  <span className="font-semibold text-amber-500">{featureCreditCost} credits</span>
+                </div>
+                {/* <p className="text-xs text-muted-foreground mt-1">
+                  This amount will be deducted from your account when you generate a model
+                </p> */}
               </div>
 
               {/* Generate Button */}

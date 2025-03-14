@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
 
 // Icons
-import { Hash, Loader, RefreshCw, Wand2 } from 'lucide-react'
+import { Hash, Loader, RefreshCw, Wand2, Coins } from 'lucide-react'
 
 // Actions
 import { text3D, checkReplicateStatus } from "@/components/actions/featuresActions"
@@ -38,6 +38,7 @@ export default function Text3D() {
   const [modelId, setModelId] = useState<string | null>(null)
   
   const setCredits = useCreditStore(state => state.setCredits)
+  const featureCreditCost = 40
 
   // Track elapsed time during generation with minutes and seconds
   useEffect(() => {
@@ -222,7 +223,18 @@ export default function Text3D() {
                 </div>
                 <p className="text-xs text-muted-foreground">Leave empty for random results</p>
               </div>
-
+              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">Credit Cost</span>
+                  </div>
+                  <span className="font-semibold text-amber-500">{featureCreditCost} credits</span>
+                </div>
+                {/* <p className="text-xs text-muted-foreground mt-1">
+                  This amount will be deducted from your account when you generate a model
+                </p> */}
+              </div>
               {/* Generate Button */}
               <Button
                 className="w-full h-10 mt-4"
