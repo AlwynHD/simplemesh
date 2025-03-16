@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     ],
     apple: '/favicon/Logo-Fox-Light.png',
   },
+  keywords: ["3D models", "AI", "image to 3D", "text to 3D", "SimpleMesh", "3D generation", "game development assets", "3D artists", "3D mesh creation"],  
+  authors: [{ name: "SimpleMesh Team" }],
+  creator: "SimpleMesh AI",
+  publisher: "SimpleMesh AI",
 };
 export default function RootLayout({
   children,
