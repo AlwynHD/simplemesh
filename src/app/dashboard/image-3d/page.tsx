@@ -140,8 +140,10 @@ export default function Image3D() {
   }, [])
 
   const handleFileUpload = (file: File) => {
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      setError('Please select a JPEG or PNG image only')
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/jpg'];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please select a supported image format (PNG, JPEG, JPG, WebP, or AVIF)')
       return
     }
 
@@ -172,7 +174,7 @@ export default function Image3D() {
       setPredictionId(null)
       setModelId(null)
       setModelUrl(undefined)
-      
+
       setIsLoading(true)
       setStartTime(Date.now())
       setError(null)
@@ -196,7 +198,7 @@ export default function Image3D() {
             seed: seed,
           })
 
-        
+
 
           if (result?.error) {
             setError(result.error)
@@ -281,15 +283,14 @@ export default function Image3D() {
                           <Input
                             id="image"
                             type="file"
-                            accept="image/jpeg, image/png"
+                            accept="image/jpeg, image/png, image/jpg, image/webp, image/avif"
                             onChange={handleImageChange}
                             className="sr-only"
                           />
                         </Label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">PNG or JPG up to 10MB</p>
-                    </div>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPEG, WebP, or AVIF up to 5MB</p>                    </div>
                   </div>
                 ) : (
                   <div className="relative mt-2 rounded-md overflow-hidden border border-border">

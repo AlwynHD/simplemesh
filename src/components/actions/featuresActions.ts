@@ -5,6 +5,7 @@ import Replicate from 'replicate'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
 import { HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import sharp from 'sharp';
 
 // Initialize S3 client
 const s3Client = new S3Client({
@@ -34,6 +35,17 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
       return { error: 'User not authenticated' }
     }
     const userId = data.user.id;
+
+    let pngBuffer: Buffer;
+    let pngImage: string;
+    try {
+      pngBuffer = await convertImageToPng(input.image);
+      // Convert buffer to base64 string for API consumption
+      pngImage = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+    } catch (conversionError) {
+      console.error('Error converting image to PNG:', conversionError);
+      return { error: 'Failed to process image' };
+    }
 
     const supabaseService = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,15 +91,15 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
     })
     const fileId = uuidv4();
 
-    await storeModelMetadata(userId, fileId, input.image) //do this before as it doesnt matter if before or not
+    await storeModelMetadata(userId, fileId, pngImage) //do this before as it doesnt matter if before or not
 
 
     const webhookUrl = `https://www.simplemesh.ai/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
-    
+
     const prediction = await replicate.predictions.create({
       version: "b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
       input: {
-        images: [input.image],
+        images: [pngImage],
         seed: input.seed !== undefined ? input.seed : 0,
         texture_size: 1024,
         mesh_simplify: 0.95,
@@ -198,7 +210,7 @@ export async function text3D(input: { prompt: string, seed?: number }): Promise<
 
 
     const webhookUrl = `https://www.simplemesh.ai/api/replicate-webhook?userId=${userId}&modelId=${fileId}`;
-    
+
     const prediction = await replicate.predictions.create({
       version: "b7e6861629c6a42f3a3f25319c02060ee14e4a310efa07b73f2ae66f1ed851af",
       input: {
@@ -560,7 +572,7 @@ export async function storeModelMetadata(
 }
 
 //Check the status of the prediction
-export async function checkReplicateStatus(predictionId: string): Promise<{ 
+export async function checkReplicateStatus(predictionId: string): Promise<{
   status: 'starting' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   output?: {
     model_file?: string;
@@ -577,19 +589,61 @@ export async function checkReplicateStatus(predictionId: string): Promise<{
       auth: process.env.REPLICATE_API_TOKEN!,
       useFileOutput: false,
     });
-    
+
     const prediction = await replicate.predictions.get(predictionId);
-    
+
     return {
       status: prediction.status,
       output: prediction.output
     };
   } catch (err) {
     console.error('Error checking Replicate status:', err);
-    return { 
+    return {
       status: 'failed',
-      error: 'Failed to check model status' 
+      error: 'Failed to check model status'
     };
   }
 }
 
+
+
+// Convert image to PNG format
+export async function convertImageToPng(input: string | Buffer): Promise<Buffer> {
+  try {
+    let imageBuffer: Buffer;
+    
+    // Handle URL input
+    if (typeof input === 'string' && (input.startsWith('http://') || input.startsWith('https://'))) {
+      imageBuffer = await downloadFile(input);
+    } 
+    // Handle base64 string input
+    else if (typeof input === 'string' && input.includes('base64')) {
+      const base64Data = input.split(',')[1] || input;
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    }
+    // Handle Buffer input
+    else if (Buffer.isBuffer(input)) {
+      imageBuffer = input;
+    }
+    // Handle string input as raw base64
+    else if (typeof input === 'string') {
+      try {
+        imageBuffer = Buffer.from(input, 'base64');
+      } catch (e) {
+        throw new Error('Invalid input format');
+      }
+    }
+    else {
+      throw new Error('Unsupported input type');
+    }
+
+    // Convert to PNG using sharp
+    return await sharp(imageBuffer)
+      .png()
+      .toBuffer();
+  } catch (error: unknown) {
+    console.error('Error converting image to PNG:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to convert image to PNG: ${errorMessage}`);
+  }
+}
