@@ -1,5 +1,5 @@
 "use client"
-import PricingComponent from "./pricing-component"
+import PricingComponent from '@/components/landing/fixed-price'
 import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
@@ -94,7 +94,7 @@ export default function Page() {
             <nav className="flex justify-center space-x-8 flex-1">
               {[
                 { href: "/#examples", label: "Examples" },
-                { href: "/pricing", label: "Pricing" },
+                { href: "/#pricing", label: "Pricing" },
                 { href: "/#questions", label: "Questions" },
                 { href: "https://discord.gg/XzdMYGg5sM", label: "Community" }
               ].map((item) => (

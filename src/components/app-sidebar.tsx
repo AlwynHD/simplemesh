@@ -26,7 +26,7 @@ import {
 import { useEffect, useState } from "react"
 import Link from "next/link"
 // This is sample data.
-import { Lock } from "lucide-react"
+import { Lock, Plus } from "lucide-react"
 import PricingOverlay from '@/components/pricingOverlay/pricingOverlay' // Add this import
 
 import { getUserBilling } from "@/components/actions/billingActions"
@@ -85,7 +85,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, []);
 
 
+    const handlePurchase = async (e?: React.MouseEvent) => {
+        if (e) e.preventDefault()
+        
+            const form = document.createElement('form')
+            form.method = 'GET'
+            form.action = '/api/stripe_once'
 
+            const input = document.createElement('input')
+            input.type = 'hidden'
+            input.name = 'priceID'
+            input.value = 'price_1R43VWCcCkxwgwE8Fuar1cmN'
+
+            form.appendChild(input)
+            document.body.appendChild(form)
+            form.submit()
+        
+    }
 
 
   return (
@@ -98,31 +114,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      {isFreePlan && state === 'expanded' && (
+      {state === 'expanded' && (
         <>
           <div
-            onClick={() => setShowPricingOverlay(true)}
+            onClick={() => handlePurchase()}
             className="mx-4 my-4 block hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
-            aria-label="Upgrade to full plan for full feature access"
+            aria-label="Purchase more credits"
           >
             <div className="p-4 rounded-md bg-primary/10 text-center text-primary shadow-sm border border-primary/20 hover:bg-primary/20 cursor-pointer">
-              {/* Sparkles Icon */}
+              {/* Coin/Credit Icon */}
               <div className="flex justify-center mb-3">
                 <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
               </div>
 
-              {/* Friendly Heading */}
-              <h2 className="text-base font-semibold text-primary">Free Plan Access</h2>
+              {/* New Heading */}
+              <h2 className="text-base font-semibold text-primary">Need More Credits?</h2>
 
               {/* Updated Subtext */}
               <p className="mt-2 text-xs text-muted-foreground">
-                Upgrade to access our full set of features.
+                Your free credits are running low. Recharge to continue using all features.
               </p>
 
-              {/* Upgrade Now Button */}
+              {/* Updated Button */}
               <div className="inline-flex items-center justify-center mt-2 px-3 py-1.5 bg-primary text-white rounded-md transition-colors text-sm hover:bg-primary/90">
-                <Lock className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                Upgrade Now
+                <Plus className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                Get More Credits
               </div>
             </div>
           </div>

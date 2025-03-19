@@ -114,7 +114,7 @@ export default function Home() {
                         <nav className="flex justify-center space-x-8 flex-1">
                             {[
                                 { href: "/#examples", label: "Examples" },
-                                { href: "/pricing", label: "Pricing" },
+                                { href: "/#pricing", label: "Pricing" },
                                 { href: "/#questions", label: "Questions" },
                                 { href: "https://discord.gg/XzdMYGg5sM", label: "Community" }
                             ].map((item) => (
@@ -169,7 +169,7 @@ export default function Home() {
                     <nav className="px-4 pt-4 pb-5 space-y-2 border-t border-[hsl(var(--border))]/20 mt-2 bg-[hsl(var(--background))]/95">
                         {[
                             { href: "/#examples", label: "Examples" },
-                            { href: "/pricing", label: "Pricing" },
+                            { href: "/#pricing", label: "Pricing" },
                             { href: "/#questions", label: "Questions" },
                             { href: "https://discord.gg/XzdMYGg5sM", label: "Community" }
                         ].map((item) => (
@@ -335,8 +335,10 @@ export default function Home() {
             {/* 4. Features Grid */}
             {/* <FeaturesGrid /> */}
 
+            <section id='pricing'>
+                <PricingComponent />
+            </section>
 
-            <PricingComponent />
             {/* 6. Testimonials Section */}
             {/* <TestimonialSection /> */}
 
