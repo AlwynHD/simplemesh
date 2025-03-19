@@ -95,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const input = document.createElement('input')
             input.type = 'hidden'
             input.name = 'priceID'
-            input.value = 'price_1R43VWCcCkxwgwE8Fuar1cmN'
+            input.value = 'price_1R49jsCcCkxwgwE85NFlzqZJ'
 
             form.appendChild(input)
             document.body.appendChild(form)
