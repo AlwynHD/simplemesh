@@ -22,13 +22,14 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { isUserOnFreePlan } from "./actions/billingActions"
+// import { isUserOnFreePlan } from "./actions/billingActions"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 // This is sample data.
 import { Lock } from "lucide-react"
 import PricingOverlay from '@/components/pricingOverlay/pricingOverlay' // Add this import
 
+import { getUserBilling } from "@/components/actions/billingActions"
 
 const data = {
 
@@ -62,20 +63,30 @@ const data = {
 
 }
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [isFreePlan, setIsFreePlan] = useState(false)
   const { state } = useSidebar();
   const [showPricingOverlay, setShowPricingOverlay] = useState(false)
-
+  const [credits, setCredits] = useState(0);
+  const [isFreePlan, setIsFreePlan] = useState(true);
 
   useEffect(() => {
-    async function checkPlan() {
-      const free = await isUserOnFreePlan()
-      setIsFreePlan(free)
+    async function fetchUserBilling() {
+      try {
+        const billingData = await getUserBilling();
+        setCredits(billingData.credits || 0);
+        setIsFreePlan(billingData.credits === 0);
+      } catch (error) {
+        console.error("Failed to fetch user billing:", error);
+        setCredits(0);
+        setIsFreePlan(true);
+      }
     }
-    checkPlan()
-  }, [])
 
-  
+    fetchUserBilling();
+  }, []);
+
+
+
+
 
   return (
     <Sidebar collapsible="icon" {...props}>

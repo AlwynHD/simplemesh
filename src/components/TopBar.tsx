@@ -9,10 +9,10 @@ import { useEffect } from "react"
 
 interface TopBarProps {
   initialCredits: number;
-  planType: string;
+  
 }
 
-export function TopBar({ initialCredits, planType }: TopBarProps) {
+export function TopBar({ initialCredits }: TopBarProps) {
     const credits = useCreditStore((state) => state.credits)
     
     useEffect(() => {
@@ -35,10 +35,10 @@ export function TopBar({ initialCredits, planType }: TopBarProps) {
                             <span className="text-sm text-muted-foreground">Credits:</span>
                             <span className="text-sm font-semibold text-foreground">{credits}</span>
                         </div>
-                        <Separator orientation="vertical" className="h-4 mx-2" />
+                        {/* <Separator orientation="vertical" className="h-4 mx-2" />
                         <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
                             {planType}
-                        </Badge>
+                        </Badge> */}
                     </div>
                     <NavUser variant="small" />
                 </div>

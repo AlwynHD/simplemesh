@@ -14,7 +14,8 @@ import FeaturesGrid from '@/components/landing/featuresGrid'
 import TestimonialSection from '@/components/landing/testimonials'
 import { FAQSection } from '@/components/landing/faq'
 import { Footer } from '@/components/landing/footer'
-
+import YoutubeShowcase from '@/components/landing/youtube-showcase'
+import PricingComponent from '@/components/landing/fixed-price'
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from 'next/navigation'
 export default function Home() {
@@ -62,13 +63,13 @@ export default function Home() {
     return (
         <div className="relative min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
             {/* Top notification bar */}
-            <div className="relative backdrop-blur-xl bg-[hsl(var(--background))]/80 border-[hsl(var(--border))] py-2 md:py-4 px-4 md:px-6 border-b overflow-hidden">
+            {/* <div className="relative backdrop-blur-xl bg-[hsl(var(--background))]/80 border-[hsl(var(--border))] py-2 md:py-4 px-4 md:px-6 border-b overflow-hidden">
                 <div className="absolute inset-0 opacity-5">
                     <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, hsl(var(--muted-foreground)) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                 </div>
 
                 <div className="hidden md:flex max-w-6xl mx-auto justify-center items-center space-x-8 text-sm relative z-10">
-                    {/* Early Access Badge */}
+                    
                     <div className="flex items-center" style={{ opacity: animatedItems["early-access"] ? 1 : 0, transform: animatedItems["early-access"] ? 'translateY(0)' : 'translateY(20px)', transition: 'all 0.5s ease-out' }} id="early-access" data-animate="true">
                         <svg className="text-emerald-500 mr-2 text-base" height="1em" width="1em" viewBox="0 0 512 512">
                             <path d="M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 48c110.532 0 200 89.451 200 200 0 110.532-89.451 200-200 200-110.532 0-200-89.451-200-200 0-110.532 89.451-200 200-200m140.204 130.267l-22.536-22.718c-4.667-4.705-12.265-4.736-16.97-.068L215.346 303.697l-59.792-60.277c-4.667-4.705-12.265-4.736-16.97-.069l-22.719 22.536c-4.705 4.667-4.736 12.265-.068 16.971l90.781 91.516c4.667 4.705 12.265 4.736 16.97.068l172.589-171.204c4.704-4.668 4.734-12.266.067-16.971z" fill="currentColor" />
@@ -98,7 +99,7 @@ export default function Home() {
                         </span>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Header/Navigation */}
             <header className="sticky top-0 z-50 bg-[hsl(var(--background))]/90 backdrop-blur-md border-b border-[hsl(var(--border))]/30 py-4">
@@ -201,6 +202,7 @@ export default function Home() {
             </header>
 
             <HeroSection openModal={openModal} />
+            <YoutubeShowcase />
 
             <section id='examples'>
                 <GallerySection />
@@ -208,7 +210,7 @@ export default function Home() {
             </section>
 
             {/* 1. Companies Section */}
-            <section className="py-10 border-t border-border bg-background/50">
+            {/* <section className="py-10 border-t border-border bg-background/50">
                 <div className="container mx-auto">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                         <div className="md:max-w-xs">
@@ -252,7 +254,7 @@ export default function Home() {
 
 
                 </div>
-            </section>
+            </section> */}
 
             {/* 2. Features Section */}
             <FeatureShowcase />
@@ -331,72 +333,12 @@ export default function Home() {
             </section>
 
             {/* 4. Features Grid */}
-            <FeaturesGrid />
+            {/* <FeaturesGrid /> */}
 
-            {/* 5. Main CTA Video Section
-            <section className="py-20 bg-gradient-to-b from-background to-background/90 border-b border-border">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col lg:flex-row items-center gap-12">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6 }}
-                            className="flex-1 space-y-6 text-center lg:text-left"
-                        >
-                            <div>
-                                <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-                                    Turn any Image into 3D
-                                </h2>
-                                <p className="text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-                                    And so much more...
-                                </p>
-                            </div>
 
-                            <p className="text-lg text-muted-foreground max-w-xl">
-                                Transform <span className="text-primary font-medium">Text</span> or
-                                <span className="text-primary font-medium"> Images</span> into
-                                <span className="text-primary font-medium"> 3D models</span> in
-                                seconds, generate high quality images and create textures with AI.
-                            </p>
-
-                            <motion.button
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="mt-4 px-6 py-3 bg-primary text-primary-foreground rounded-lg text-lg font-medium flex items-center gap-2 shadow-lg shadow-primary/10"
-                            >
-                                Launch Studio
-                                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828z"></path>
-                                    <path d="M3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31z"></path>
-                                </svg>
-                            </motion.button>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.7 }}
-                            className="flex-1 rounded-xl overflow-hidden shadow-2xl border border-border"
-                        >
-                            <video
-                                className="w-full h-auto"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                            >
-                                <source src="/VideoHeader3.mp4" type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </motion.div>
-                    </div>
-                </div>
-            </section> */}
-
+            <PricingComponent />
             {/* 6. Testimonials Section */}
-            <TestimonialSection />
+            {/* <TestimonialSection /> */}
 
             {/* 7. Final CTA Section */}
             <section className="py-20 bg-primary text-white relative overflow-hidden">
@@ -453,7 +395,7 @@ export default function Home() {
             {/* 8. FAQ Section */}
             <FAQSection />
 
-           
+
             {/* 9. Footer */}
             <Footer openModal={openModal} />
 

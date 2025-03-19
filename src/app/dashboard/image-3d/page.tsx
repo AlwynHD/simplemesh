@@ -39,7 +39,7 @@ export default function Image3D() {
   const setCredits = useCreditStore(state => state.setCredits)
 
   // Example price - this would typically come from your API or config
-  const featureCreditCost = 35
+  const featureCreditCost = 1
 
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [modelId, setModelId] = useState<string | null>(null)
@@ -349,7 +349,7 @@ export default function Image3D() {
                     <Coins className="h-4 w-4 text-amber-500" />
                     <span className="text-sm font-medium">Credit Cost</span>
                   </div>
-                  <span className="font-semibold text-amber-500">{featureCreditCost} credits</span>
+                  <span className="font-semibold text-amber-500">{featureCreditCost} credit</span>
                 </div>
                 {/* <p className="text-xs text-muted-foreground mt-1">
                   This amount will be deducted from your account when you generate a model

@@ -38,7 +38,7 @@ export default function Text3D() {
   const [modelId, setModelId] = useState<string | null>(null)
   
   const setCredits = useCreditStore(state => state.setCredits)
-  const featureCreditCost = 40
+  const featureCreditCost = 1
 
   // Track elapsed time during generation with minutes and seconds
   useEffect(() => {
@@ -231,7 +231,7 @@ export default function Text3D() {
                     <Coins className="h-4 w-4 text-amber-500" />
                     <span className="text-sm font-medium">Credit Cost</span>
                   </div>
-                  <span className="font-semibold text-amber-500">{featureCreditCost} credits</span>
+                  <span className="font-semibold text-amber-500">{featureCreditCost} credit</span>
                 </div>
                 {/* <p className="text-xs text-muted-foreground mt-1">
                   This amount will be deducted from your account when you generate a model

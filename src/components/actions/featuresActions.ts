@@ -29,7 +29,7 @@ export async function downloadFile(url: string): Promise<Buffer> {
 export async function image3D(input: { image: string, seed?: number }): Promise<{ updatedCredits?: number; modelUrl?: string; modelId?: string; predictionId?: string; error?: string }> {
   try {
     const supabase = createClientServer()
-    const cost = 35
+    const cost = 1
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { error: 'User not authenticated' }
@@ -53,9 +53,9 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
     )
 
     const { data: userData, error: userError } = await supabaseService
-      .from('user_billing')
+      .from('purchases')
       .select('credits')
-      .eq('id', data.user.id)
+      .eq('user_email', data.user.email)
       .single()
 
     if (userError) {
@@ -68,9 +68,9 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
     const updatedCredits = userData.credits - cost
 
     const { error: updateError } = await supabaseService
-      .from('user_billing')
+      .from('purchases')
       .update({ credits: updatedCredits })
-      .eq('id', data.user.id)
+      .eq('user_email', data.user.email)
 
     if (updateError) {
       return { error: updateError.message }
@@ -134,7 +134,7 @@ export async function image3D(input: { image: string, seed?: number }): Promise<
 export async function text3D(input: { prompt: string, seed?: number }): Promise<{ updatedCredits?: number; modelUrl?: string; modelId?: string; predictionId?: string; error?: string }> {
   try {
     const supabase = createClientServer()
-    const cost = 40
+    const cost = 1
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data?.user) {
       return { error: 'User not authenticated' }
@@ -147,9 +147,9 @@ export async function text3D(input: { prompt: string, seed?: number }): Promise<
     )
 
     const { data: userData, error: userError } = await supabaseService
-      .from('user_billing')
+      .from('purchases')
       .select('credits')
-      .eq('id', data.user.id)
+      .eq('user_email', data.user.email)
       .single()
 
     if (userError) {
@@ -162,9 +162,9 @@ export async function text3D(input: { prompt: string, seed?: number }): Promise<
     const updatedCredits = userData.credits - cost
 
     const { error: updateError } = await supabaseService
-      .from('user_billing')
+      .from('purchases')
       .update({ credits: updatedCredits })
-      .eq('id', data.user.id)
+      .eq('user_email', data.user.email)
 
     if (updateError) {
       return { error: updateError.message }
