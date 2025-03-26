@@ -6,7 +6,7 @@ const nextConfig = {
     },
   },
   images: {
-    domains: ['i.pravatar.cc', 'dtvtmcu5ktkw1.cloudfront.net', 'placehold.co', 'source.unsplash.com'], // Added placehold.co
+    domains: ['i.pravatar.cc', 'dtvtmcu5ktkw1.cloudfront.net', 'placehold.co', 'source.unsplash.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -37,6 +37,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+
 };
 
 export default nextConfig;
