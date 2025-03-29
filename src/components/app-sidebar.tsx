@@ -67,6 +67,10 @@ const data = {
           title: "Format Converter",
           url: "/dashboard/tools-free/format-convert",
         },
+        {
+          title: "Low Poly Mesh Simplifier",
+          url: "/dashboard/tools-free/low-poly",
+        },
 
       ],
     },
