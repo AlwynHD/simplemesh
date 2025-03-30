@@ -57,6 +57,23 @@ const data = {
       url: "/dashboard/text-3d",
       icon: Quote,
     },
+    {
+      title: "Free Tools",
+      url: "#",
+      icon: Quote,
+      isActive: true,
+      items: [
+        {
+          title: "Format Converter",
+          url: "/dashboard/tools-free/format-convert",
+        },
+        {
+          title: "Low Poly Mesh Simplifier",
+          url: "/dashboard/tools-free/low-poly",
+        },
+
+      ],
+    },
 
 
   ],
