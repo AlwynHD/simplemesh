@@ -223,14 +223,14 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                           enabled={true} // Enable user interaction
                           zoom={1}
                           // --- MODIFIED ROTATION ---
-                          rotation={[0, 3.7, 0]} // Initial rotation (X, Y, Z) - Set Y to 0 to face front
+                          rotation={[0, 0, 0]} // Initial rotation (X, Y, Z) - Set Y to 0 to face front
                           // --- END MODIFIED ROTATION ---
                           polar={[-Math.PI / 4, Math.PI / 4]} // Vertical rotation limits
                           azimuth={[-Math.PI / 4, Math.PI / 4]} // Horizontal rotation limits
                           config={{ mass: 2, tension: 500 }} // Spring physics config
                         >
                           {/* Render the model component */}
-                          <Model url="/Standing.fbx" />
+                          <Model url="/Shuffling.fbx" />
                         </PresentationControls>
                         {/* Environment lighting */}
                         <Environment preset="city" />
