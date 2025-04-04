@@ -11,7 +11,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 // Removed PresentationControls import as it's no longer used for interaction
 import { Environment } from "@react-three/drei";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import WebGLGuard from "@/components/WebGLGuard"; // Assuming this path is correct
 
 // --- Model Logic embedded directly ---

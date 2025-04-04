@@ -3,16 +3,16 @@ import { motion } from "framer-motion";
 import * as THREE from "three"; // <-- Import THREE
 import { Environment, PresentationControls } from "@react-three/drei";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import Link from "next/link";
 import WebGLGuard from "@/components/WebGLGuard"; // Assuming this path is correct
 import { Hammer, Anvil, ShieldCheck } from "lucide-react";
 
 // --- Model Component (No changes needed here for rotation fix) ---
-function Model({ url }) {
-  const group = useRef();
+function Model({ url }: { url: string }) {
+  const group = useRef<THREE.Group>();
   const fbx = useLoader(FBXLoader, url);
-  const mixer = useRef(); // Initialize mixer ref
+  const mixer = useRef<THREE.AnimationMixer | undefined>(); // Initialize mixer ref with proper type
 
   useEffect(() => {
     // Ensure fbx is loaded before proceeding
@@ -25,7 +25,7 @@ function Model({ url }) {
       });
 
       fbx.traverse((child) => {
-        if (child.isMesh) {
+        if (child instanceof THREE.Mesh) {
           // Replace original material(s) with the standard one
           child.material = defaultMaterial;
           child.castShadow = true; // Allow mesh to cast shadows
@@ -41,10 +41,12 @@ function Model({ url }) {
       // --- Initialize and Play Animations ---
       mixer.current = new THREE.AnimationMixer(fbx);
 
-      if (fbx.animations && fbx.animations.length) {
+      if (fbx.animations && fbx.animations.length && mixer.current) {
         fbx.animations.forEach((clip) => {
-          const action = mixer.current.clipAction(clip);
-          action.play();
+          if (mixer.current) {
+            const action = mixer.current.clipAction(clip);
+            action.play();
+          }
         });
       }
       // --- End Animations ---
