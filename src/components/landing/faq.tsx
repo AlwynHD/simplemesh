@@ -22,7 +22,7 @@ const faqData = [
     {
         id: "faq-3",
         question: "How many credits does each task cost?",
-        answer: "Image to 3D and Text to 3D generations cost 35 and 40 credits respectively per task."
+        answer: "Image to 3D and Text to 3D generations costs 1 credit each per task."
     },
     {
         id: "faq-4",
@@ -42,7 +42,7 @@ const faqData = [
     {
         id: "faq-8",
         question: "How do I purchase credits?",
-        answer: "You can purchase credits from the billing section of your dashboard. We accept all major credit cards and paypal. A monthly subscription plan is required."
+        answer: "You can purchase credits from the billing section of your dashboard. We accept all major credit cards and paypal."
     },
     {
         id: "faq-9",
@@ -52,7 +52,7 @@ const faqData = [
     {
         id: "faq-10",
         question: "What happens to my unused credits?",
-        answer: "Credits reset every month on the purchase date. Unused credits do not roll over to the next month."
+        answer: "Credits never expire and will remain in your account until used."
     },
     {
         id: "faq-11",
