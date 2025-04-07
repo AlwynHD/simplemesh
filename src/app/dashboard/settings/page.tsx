@@ -39,7 +39,6 @@ const SettingsPage = () => {
                     <TabsContent value="account" className="p-8">
                         <AccountSettings />
                     </TabsContent>
-
                 </div>
             </Tabs>
         </div>
