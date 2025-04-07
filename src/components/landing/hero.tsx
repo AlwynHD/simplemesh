@@ -1,30 +1,78 @@
-import { useState, useEffect, Suspense } from "react";
-import Image from "next/image";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { motion } from "framer-motion";
-import * as THREE from "three";
-import { useGLTF, Environment, PresentationControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import * as THREE from "three"; // <-- Import THREE
+import { Environment, PresentationControls } from "@react-three/drei";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import Link from "next/link";
-import WebGLGuard from "@/components/WebGLGuard";
+import WebGLGuard from "@/components/WebGLGuard"; // Assuming this path is correct
 import { Hammer, Anvil, ShieldCheck } from "lucide-react";
 
-// Refined model component with proper lighting and positioning
+// --- Model Component (No changes needed here for rotation fix) ---
 function Model({ url }: { url: string }) {
   const group = useRef<THREE.Group>();
-  const { scene } = useGLTF(url) as any;
+  const fbx = useLoader(FBXLoader, url);
+  const mixer = useRef<THREE.AnimationMixer | undefined>(); // Initialize mixer ref with proper type
 
-  // More subtle rotation for a professional look
-  useFrame(() => {
-    if (group.current) {
-      group.current.rotation.y += 0.003;
+  useEffect(() => {
+    // Ensure fbx is loaded before proceeding
+    if (fbx) {
+      // --- Apply Default Material ---
+      const defaultMaterial = new THREE.MeshStandardMaterial({
+        color: 0xcccccc, // Light gray - adjust as needed
+        metalness: 0.2,  // Slightly metallic
+        roughness: 0.8,  // Mostly rough
+      });
+
+      fbx.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Replace original material(s) with the standard one
+          child.material = defaultMaterial;
+          child.castShadow = true; // Allow mesh to cast shadows
+          child.receiveShadow = true; // Allow mesh to receive shadows
+        }
+      });
+      // --- End Apply Default Material ---
+
+      // Set scale and position
+      fbx.scale.set(0.4, 0.4, 0.4);
+      fbx.position.set(0, -1.2, 0); // Adjust Y position if needed after scaling
+
+      // --- Initialize and Play Animations ---
+      mixer.current = new THREE.AnimationMixer(fbx);
+
+      if (fbx.animations && fbx.animations.length && mixer.current) {
+        fbx.animations.forEach((clip) => {
+          if (mixer.current) {
+            const action = mixer.current.clipAction(clip);
+            action.play();
+          }
+        });
+      }
+      // --- End Animations ---
     }
+
+    // Cleanup function
+    return () => {
+      if (mixer.current) {
+        mixer.current.stopAllAction();
+      }
+    };
+  }, [fbx]); // Depend on the loaded fbx object
+
+  useFrame((_, delta) => {
+    // Update animations if mixer exists
+    if (mixer.current) {
+      mixer.current.update(delta);
+    }
+
   });
 
-  return <primitive ref={group} object={scene} scale={2.2} position={[0, -0.1, 0]} />;
+  // Conditionally render the primitive only when fbx is loaded
+  return fbx ? <primitive ref={group} object={fbx} dispose={null} /> : null;
 }
 
+// --- HeroSection Component ---
 interface HeroSectionProps {
   openModal: () => void;
 }
@@ -40,7 +88,7 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
 
   return (
     <section className="relative w-full py-16 md:py-24 lg:py-32 overflow-hidden bg-gradient-to-b from-background to-background/80">
-      {/* Refined background elements */}
+      {/* Background elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
         <div className="absolute h-[500px] w-[500px] -top-64 -left-64 bg-primary/10 rounded-full blur-3xl"></div>
@@ -49,36 +97,37 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
-          {/* Content column with refined typography */}
+          {/* Content column */}
           <motion.div
             className="w-full lg:w-1/2 space-y-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="space-y-5 text-center lg:text-left">
-              <motion.span 
+            {/* ... Rest of your content column ... */}
+             <div className="space-y-5 text-center lg:text-left">
+              <motion.span
                 className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium tracking-wide"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
-                3D AI Generation
+                AI 3D Asset Generation
               </motion.span>
 
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-                Turn Ideas Into 3D <span className="text-primary">Instantly</span>
+                Game Ready Assets In <span className="text-primary">Seconds</span>
               </h1>
 
               <p className="text-base md:text-lg text-muted-foreground max-w-md mx-auto lg:mx-0 leading-relaxed">
-                Type a prompt or upload an image to create production-ready 3D models in seconds. No waiting, no complexity.
+                Create 3D models in seconds from simple text prompts or image uploads. Generate assets optimized for game engines and ready for immediate rigging and animation.
               </p>
             </div>
 
-            {/* Professional CTA section */}
+            {/* CTA section */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <motion.button 
-                onClick={openModal} 
+              <motion.button
+                onClick={openModal}
                 className="px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium inline-flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:brightness-105 transition-all duration-300"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -93,7 +142,7 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Link  
+                <Link
                   href='/#examples'
                   className="px-6 py-3 rounded-lg border border-border/60 bg-background/80 backdrop-blur-sm hover:bg-secondary/5 text-foreground font-medium transition-all duration-300 inline-flex items-center justify-center gap-2 w-full"
                 >
@@ -105,8 +154,8 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
               </motion.div>
             </div>
 
-            {/* Enhanced professional money-back guarantee */}
-            <motion.div 
+            {/* Money-back guarantee */}
+            <motion.div
               className="mt-8 pt-6 border-t border-border/20"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -126,25 +175,22 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
             </motion.div>
           </motion.div>
 
-          {/* 3D Model Display - Professional refinement */}
+          {/* 3D Model Display */}
           <motion.div
             className="w-full lg:w-1/2 mt-8 lg:mt-0"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.95 }}
             transition={{ duration: 0.7, delay: 0.4 }}
           >
-            {/* Model container with proper stacking context */}
-            <div className="relative mx-auto aspect-square w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px] 
-                           min-h-[300px] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] 
+            <div className="relative mx-auto aspect-square w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px]
+                           min-h-[300px] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)]
                            bg-gradient-to-b from-background/90 to-background/40 backdrop-blur-sm">
-              
-              {/* Subtle glow effects */}
+
               <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/10 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-secondary/10 rounded-full blur-2xl"></div>
               </div>
-              
-              {/* Properly positioned 3D model */}
+
               {isMounted && (
                 <WebGLGuard fallback={
                   <div className="absolute inset-0 flex items-center justify-center text-center p-4">
@@ -152,26 +198,43 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                   </div>
                 }>
                   <div className="w-full h-full absolute inset-0 z-10">
-                    <Canvas 
-                      camera={{ position: [0, 0, 4.2], fov: 42 }}
+                    <Canvas
+                      shadows // <-- Enable shadows for the scene
+                      camera={{ position: [0, 0, 5], fov: 40 }}
                       style={{ width: '100%', height: '100%' }}
-                      dpr={[1, 2]}
+                      dpr={[1, 2]} // Adjust pixel ratio for performance vs quality
                       gl={{ antialias: true }}
                     >
                       <Suspense fallback={null}>
-                        <ambientLight intensity={0.6} />
-                        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={0.9} />
-                        <spotLight position={[-10, -10, -10]} angle={0.15} penumbra={1} intensity={0.2} />
+                        {/* Adjusted Lighting - Intensity might need tweaking */}
+                        <ambientLight intensity={0.7} />
+                        <spotLight
+                          position={[10, 10, 10]}
+                          angle={0.2} // Slightly wider angle
+                          penumbra={1}
+                          intensity={1.2} // Slightly increased intensity
+                          castShadow // Allow this light to cast shadows
+                          shadow-mapSize-width={1024} // Shadow map resolution
+                          shadow-mapSize-height={1024}
+                        />
+                        {/* Optional: Add a fill light if needed */}
+                        <directionalLight position={[-5, 5, -5]} intensity={0.3} />
+
                         <PresentationControls
                           global
-                          enabled={true}
+                          enabled={true} // Enable user interaction
                           zoom={1}
-                          rotation={[0, -Math.PI / 5, 0]}
-                          polar={[-Math.PI / 4, Math.PI / 4]}
-                          azimuth={[-Math.PI / 4, Math.PI / 4]}
+                          // --- MODIFIED ROTATION ---
+                          rotation={[0, 0, 0]} // Initial rotation (X, Y, Z) - Set Y to 0 to face front
+                          // --- END MODIFIED ROTATION ---
+                          polar={[-Math.PI / 4, Math.PI / 4]} // Vertical rotation limits
+                          azimuth={[-Math.PI / 4, Math.PI / 4]} // Horizontal rotation limits
+                          config={{ mass: 2, tension: 500 }} // Spring physics config
                         >
-                          <Model url="/LandingDemo.glb" />
+                          {/* Render the model component */}
+                          <Model url="/Shuffling.fbx" />
                         </PresentationControls>
+                        {/* Environment lighting */}
                         <Environment preset="city" />
                       </Suspense>
                     </Canvas>
@@ -179,8 +242,8 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                 </WebGLGuard>
               )}
 
-              {/* Floating elements on top - Fixed positioning */}
-              <div 
+              {/* Floating elements */}
+              <div
                 className="absolute -top-4 -left-4 z-30 bg-background rounded-lg p-3 shadow-md"
                 style={{
                   animation: "float 6s ease-in-out infinite",
@@ -190,7 +253,7 @@ const HeroSection = ({ openModal }: HeroSectionProps) => {
                 <Hammer className="w-6 h-6 text-primary" />
               </div>
 
-              <div 
+              <div
                 className="absolute -bottom-4 -right-4 z-30 bg-background rounded-lg p-3 shadow-md"
                 style={{
                   animation: "float 6s ease-in-out infinite 2s",

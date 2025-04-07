@@ -20,10 +20,10 @@ const FeatureShowcase = () => {
       type: "JPG"
     },
     {
-      title: "Remesh",
-      description: "Advanced remeshing capabilities for your 3D models",
+      title: "Texture Generation",
+      description: "Advanced AI tools to retexture your models",
       image: "",  // Empty string since there's no image
-      type: "3D",
+      type: "AI",
       comingSoon: true
     }
   ];

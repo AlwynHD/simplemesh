@@ -191,7 +191,7 @@ export default function Home() {
                                 </div>
                                 <div>
                                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/90">
-                                        3D Creation Made Ridiculously Simple
+                                        Game Development Made Ridiculously Simple
                                     </h2>
                                     <p className="text-lg text-muted-foreground">
                                         Turn your ideas into stunning 3D models in minutes — no technical skills required
@@ -264,12 +264,12 @@ export default function Home() {
                                 </svg>
                             </div>
                             <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight leading-tight">
-                                    Create without Limits
-                                </h2>
-                                <p className="text-xl opacity-85 font-light">
-                                    Advanced AI generation at your fingertips
-                                </p>
+                            <h2 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight leading-tight">
+                                Game Assets on Demand
+                            </h2>
+                            <p className="text-xl opacity-85 font-light">
+                                Generate characters, environments, and textures in minutes, not days
+                            </p>
                             </div>
                         </div>
 

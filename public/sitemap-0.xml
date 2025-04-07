@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://www.simplemesh.ai/login</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://www.simplemesh.ai/error</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://www.simplemesh.ai/privacy</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://www.simplemesh.ai/terms-and-conditions</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://www.simplemesh.ai/pricing</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://www.simplemesh.ai</loc><lastmod>2025-03-29T19:04:19.229Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai/error</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai/login</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai/pricing</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai/privacy</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai/terms-and-conditions</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://www.simplemesh.ai</loc><lastmod>2025-04-06T17:08:44.424Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://www.simplemesh.ai/dashboard</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://www.simplemesh.ai/dashboard/image-3d</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://www.simplemesh.ai/dashboard/text-3d</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
