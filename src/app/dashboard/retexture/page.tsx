@@ -607,8 +607,8 @@ export default function HomePage() {
         });
 
         let capturedOriginalUrl: string | null = null;
-        const maskMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        const blackBackground = new THREE.Color(0x000000);
+        const maskMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+        const blackBackground = new THREE.Color(0xffffff);
 
         try {
             // --- Step 0: Ensure scene is rendered with current view ---
