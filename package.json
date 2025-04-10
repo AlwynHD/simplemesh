@@ -40,6 +40,7 @@
     "@react-three/postprocessing": "^2.19.1",
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.45.4",
+    "@techstark/opencv-js": "^4.10.0-release.1",
     "@types/lodash": "^4.17.16",
     "@vercel/speed-insights": "^1.2.0",
     "aws-sdk": "^2.1692.0",
