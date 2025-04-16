@@ -282,12 +282,12 @@
 
 "use client"
 
-import ProjectedMaterialDemo from "@/components/retexture-components/retexture.jsx";
+import ProjectedMaterialModelDemo from "@/components/retexture-components/retexture.jsx";
 
 export default function DecalScene() {
     return (
 
-        <ProjectedMaterialDemo
+        <ProjectedMaterialModelDemo
         />
 
     )
