@@ -730,7 +730,6 @@ function ProjectedMaterialModelDemo() {
         setStatus(`Adjusted projection opacity to ${opacity.toFixed(2)}`);
     }, []);
 
-    // === Function to bake the projected texture to a new UV texture ===
     const handleBakeTexture = useCallback(async () => {
         if (!meshRef.current || !projectionOverlayRef.current || !isProjected) {
             setStatus('Cannot bake: No projection active.');
@@ -739,48 +738,169 @@ function ProjectedMaterialModelDemo() {
         
         try {
             setIsLoading(true);
-            setStatus('Baking texture...');
+            setStatus('Baking texture in two passes...');
             
-            // We'll use a simpler, more direct approach that will actually work
+            // Get the projection material and original material
+            const projMaterial = projectionOverlayRef.current.material;
+            const originalMat = meshRef.current.material;
+            const originalTexture = originalMat.map;
             
-            // 1. Create a render target
+            if (!projMaterial) {
+                throw new Error('Cannot access projection material');
+            }
+            
+            // 1. Create a render target for the projection and original texture
             const renderTarget = new THREE.WebGLRenderTarget(textureSize, textureSize, {
                 minFilter: THREE.LinearFilter,
                 magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat,
-                generateMipmaps: true
+                type: THREE.UnsignedByteType
             });
             
-            // 2. Save the current camera position for restoration later
-            const currentCameraPosition = cameraRef.current.position.clone();
-            const currentCameraQuaternion = cameraRef.current.quaternion.clone();
+            // 2. Create a shader material that captures BOTH the original texture and the projection
+            const bakingMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    projectedTexture: { value: uploadedTexture },
+                    originalTexture: { value: originalTexture },
+                    viewMatrixCamera: { value: projMaterial.uniforms.viewMatrixCamera?.value || new THREE.Matrix4() },
+                    projectionMatrixCamera: { value: projMaterial.uniforms.projectionMatrixCamera?.value || new THREE.Matrix4() },
+                    savedModelMatrix: { value: projMaterial.uniforms.savedModelMatrix?.value || new THREE.Matrix4() },
+                    projPosition: { value: projMaterial.uniforms.projPosition?.value || new THREE.Vector3() },
+                    projDirection: { value: projMaterial.uniforms.projDirection?.value || new THREE.Vector3(0, 0, -1) },
+                    widthScaled: { value: projMaterial.uniforms.widthScaled?.value || 1.0 },
+                    heightScaled: { value: projMaterial.uniforms.heightScaled?.value || 1.0 },
+                    textureOffset: { value: projMaterial.uniforms.textureOffset?.value || new THREE.Vector2() },
+                    hasOriginalTexture: { value: originalTexture ? 1.0 : 0.0 }
+                },
+                vertexShader: `
+                    uniform mat4 viewMatrixCamera;
+                    uniform mat4 projectionMatrixCamera;
+                    uniform mat4 savedModelMatrix;
+                    
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+                    varying vec4 vTexCoords;
+                    
+                    void main() {
+                        vUv = uv;
+                        // Get normal in world space - critical for correct projection visibility
+                        vNormal = normalize(mat3(savedModelMatrix) * normal);
+                        
+                        // Get world position - needed for both projection and face direction test
+                        vec4 worldPosition = savedModelMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        
+                        // Project using the projection camera
+                        vTexCoords = projectionMatrixCamera * viewMatrixCamera * worldPosition;
+                        
+                        // For the render target, use the UVs directly
+                        gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D projectedTexture;
+                    uniform sampler2D originalTexture;
+                    uniform float hasOriginalTexture;
+                    uniform vec3 projPosition;
+                    uniform vec3 projDirection;
+                    uniform vec2 textureOffset;
+                    uniform float widthScaled;
+                    uniform float heightScaled;
+                    
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+                    varying vec4 vTexCoords;
+                    
+                    float mapRange(float value, float min1, float max1, float min2, float max2) {
+                        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+                    }
+                    
+                    void main() {
+                        // Start with original texture or default color if none
+                        vec4 originalColor = vec4(0.5, 0.5, 0.5, 1.0);  // Default gray if no texture
+                        if (hasOriginalTexture > 0.5) {
+                            originalColor = texture2D(originalTexture, vUv);
+                        }
+                        
+                        // Apply the projection logic exactly as in the ProjectedMaterial
+                        float w = max(vTexCoords.w, 0.0);
+                        vec2 projUv = (vTexCoords.xy / w) * 0.5 + 0.5;
+                        projUv += textureOffset;
+                        
+                        // Apply scaling exactly as in ProjectedMaterial
+                        projUv.x = mapRange(projUv.x, 0.0, 1.0, 0.5 - widthScaled / 2.0, 0.5 + widthScaled / 2.0);
+                        projUv.y = mapRange(projUv.y, 0.0, 1.0, 0.5 - heightScaled / 2.0, 0.5 + heightScaled / 2.0);
+                        
+                        // Check if we're inside texture bounds
+                        bool isInTexture = (max(projUv.x, projUv.y) <= 1.0 && min(projUv.x, projUv.y) >= 0.0);
+                        
+                        // Calculate projection direction - IMPORTANT: use normalized direction
+                        vec3 projectorDirection = normalize(projPosition - vWorldPosition);
+                        
+                        // Dot product with normal determines if face is visible to projector
+                        // Using a smaller epsilon to catch more faces
+                        float dotProduct = dot(vNormal, projectorDirection);
+                        bool isFacingProjector = dotProduct > -0.2; // More permissive to catch more faces
+                        
+                        // Final color starts with original
+                        vec4 finalColor = originalColor;
+                        
+                        // If projection should be applied
+                        if (isFacingProjector && isInTexture) {
+                            vec4 projectedColor = texture2D(projectedTexture, projUv);
+                            
+                            // Only apply where projection has alpha
+                            if (projectedColor.a > 0.01) {
+                                // Blend projected color over original
+                                finalColor = vec4(
+                                    mix(originalColor.rgb, projectedColor.rgb, projectedColor.a),
+                                    max(originalColor.a, projectedColor.a)
+                                );
+                            }
+                        }
+                        
+                        gl_FragColor = finalColor;
+                    }
+                `,
+                side: THREE.DoubleSide // Render both sides to catch all faces
+            });
             
-            // 3. Set camera to match the projection camera exactly
-            cameraRef.current.position.copy(snapshotCameraState.position);
-            cameraRef.current.quaternion.copy(snapshotCameraState.quaternion);
-            cameraRef.current.updateMatrixWorld(true);
+            // 3. Create a scene for baking
+            const bakingScene = new THREE.Scene();
             
-            // 4. Temporarily hide anything we don't want in the texture
-            const sceneBackground = sceneRef.current.background;
-            sceneRef.current.background = null;
+            // Clone geometry to ensure we don't modify the original
+            const geometry = meshRef.current.geometry.clone();
+            const bakingMesh = new THREE.Mesh(geometry, bakingMaterial);
+            bakingScene.add(bakingMesh);
             
-            // 5. Render the scene to the render target
+            // 4. Setup an orthographic camera for UV rendering
+            const bakingCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+            
+            // 5. Render to the texture
             rendererRef.current.setRenderTarget(renderTarget);
-            rendererRef.current.render(sceneRef.current, cameraRef.current);
+            rendererRef.current.setClearColor(0x000000, 0);
+            rendererRef.current.clear();
+            rendererRef.current.render(bakingScene, bakingCamera);
             rendererRef.current.setRenderTarget(null);
             
-            // 6. Restore scene state
-            sceneRef.current.background = sceneBackground;
-            cameraRef.current.position.copy(currentCameraPosition);
-            cameraRef.current.quaternion.copy(currentCameraQuaternion);
-            cameraRef.current.updateMatrixWorld(true);
-            
-            // 7. Create a new Data Texture from the render target
+            // 6. Create a texture from the render target
             const pixelBuffer = new Uint8Array(4 * textureSize * textureSize);
             rendererRef.current.readRenderTargetPixels(
                 renderTarget, 0, 0, textureSize, textureSize, pixelBuffer
             );
             
+            // 7. Optional: Enhance contrast and brightness slightly
+            for (let i = 0; i < pixelBuffer.length; i += 4) {
+                // Boost contrast and brightness slightly
+                pixelBuffer[i] = Math.min(255, pixelBuffer[i] * 1.1);
+                pixelBuffer[i+1] = Math.min(255, pixelBuffer[i+1] * 1.1);
+                pixelBuffer[i+2] = Math.min(255, pixelBuffer[i+2] * 1.1);
+                // Leave alpha as is
+            }
+            
+            // 8. Create the final baked texture
             const bakedTexture = new THREE.DataTexture(
                 pixelBuffer,
                 textureSize,
@@ -788,16 +908,17 @@ function ProjectedMaterialModelDemo() {
                 THREE.RGBAFormat
             );
             bakedTexture.needsUpdate = true;
-            bakedTexture.flipY = true; // Important!
+            bakedTexture.flipY = true;
             
             // Store the baked texture
             bakedTextureRef.current = bakedTexture;
             
-            // 8. Create a new material with the baked texture
+            // 9. Create a new material with the baked texture
             const bakedMaterial = new THREE.MeshStandardMaterial({
                 map: bakedTexture,
-                roughness: 0.8,
-                metalness: 0.1
+                roughness: originalMat.roughness || 0.7,
+                metalness: originalMat.metalness || 0.1,
+                transparent: true
             });
             
             // Remove the projection overlay
@@ -806,10 +927,12 @@ function ProjectedMaterialModelDemo() {
             // Apply the baked material
             meshRef.current.material = bakedMaterial;
             
-            // Clean up
+            // 10. Clean up
             renderTarget.dispose();
+            geometry.dispose();
+            bakingMaterial.dispose();
             
-            setStatus('Texture baked successfully! Ready for export.');
+            setStatus('Texture baked with original texture blended! Ready for export.');
             setIsBaked(true);
             
         } catch (error) {
@@ -818,7 +941,7 @@ function ProjectedMaterialModelDemo() {
         } finally {
             setIsLoading(false);
         }
-    }, [isProjected, textureSize, handleRevertToOriginal, snapshotCameraState]);
+    }, [isProjected, textureSize, handleRevertToOriginal, uploadedTexture]);
 
     // === Function to export the model with baked texture ===
     const handleExportModel = useCallback(() => {
