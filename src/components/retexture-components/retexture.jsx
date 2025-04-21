@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
-import ProjectedMaterial from 'three-projected-material';
+import ProjectedMaterial, { allocateProjectionData } from 'three-projected-material';
 import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -27,6 +27,7 @@ function ProjectedMaterialModelDemo() {
 
     // New refs for UV unwrapping and baking
     const unwrapperRef = useRef(null);
+    const rtSceneRef = useRef(new THREE.Scene()); // Render-to-texture scene
     const rtCameraRef = useRef(); // Render-to-texture camera
     const rtRendererRef = useRef(); // Render-to-texture renderer
     const bakedTextureRef = useRef(); // The baked texture
@@ -179,6 +180,7 @@ function ProjectedMaterialModelDemo() {
             loader.parse(e.target.result, '', (gltf) => {
                 let foundGeometry = null;
                 let foundMaterial = null;
+                let foundMesh = null;
 
                 gltf.scene.traverse((child) => {
                     if (child.isMesh && !foundGeometry) {
@@ -1456,7 +1458,7 @@ function ProjectedMaterialModelDemo() {
                             <div className="max-h-40 overflow-y-auto rounded-md border border-gray-700 bg-gray-900">
                                 {projections.length === 0 ? (
                                     <div className="p-3 text-center text-sm text-gray-400">
-                                        No projections yet. Click &quot;Add New&quot; to create one.
+                                        No projections yet. Click "Add New" to create one.
                                     </div>
                                 ) : (
                                     <ul className="divide-y divide-gray-700">
