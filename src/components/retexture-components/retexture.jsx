@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
-import ProjectedMaterial from 'three-projected-material';
+import ProjectedMaterial, { allocateProjectionData } from 'three-projected-material';
 import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -16,11 +16,15 @@ function ProjectedMaterialModelDemo() {
     const rendererRef = useRef();
     const orbitControlsRef = useRef();
     const meshRef = useRef(); // The single mesh object
-    const projectedMaterialRef = useRef(); // Holds the final projected material
     const originalMaterialRef = useRef(); // Holds the original material from GLB
-    const projectionOverlayRef = useRef(); // Holds the overlay mesh with projection
     const requestRef = useRef();
-    
+
+    // New refs for managing multiple projections
+    const projectionOverlaysRef = useRef([]); // Array to hold all projection overlays
+    const projectedMaterialsRef = useRef([]); // Array to hold all projected materials
+    const snapshotCameraStatesRef = useRef([]); // Array to hold camera states for all projections
+    const uploadedTexturesRef = useRef([]); // Array to hold all uploaded textures
+
     // New refs for UV unwrapping and baking
     const unwrapperRef = useRef(null);
     const rtSceneRef = useRef(new THREE.Scene()); // Render-to-texture scene
@@ -33,18 +37,15 @@ function ProjectedMaterialModelDemo() {
     const [status, setStatus] = useState('Load a GLB Model to start.');
     const [loadedGeometry, setLoadedGeometry] = useState(null);
     const [originalMaterial, setOriginalMaterial] = useState(null); // State for original material
-    const [uploadedTexture, setUploadedTexture] = useState(null); // Texture uploaded by user
-    const [snapshotCameraState, setSnapshotCameraState] = useState(null); // Store camera state from snapshot
     const [modelReady, setModelReady] = useState(false); // GLB loaded?
-    const [snapshotTaken, setSnapshotTaken] = useState(false); // Snapshot downloaded?
-    const [textureReady, setTextureReady] = useState(false); // User texture loaded?
-    const [isProjected, setIsProjected] = useState(false); // Final projection done?
-    
-    // New state for unwrap and baking process
-    const [unwrapReady, setUnwrapReady] = useState(false);
-    const [textureSize, setTextureSize] = useState(1024);
-    const [isBaked, setIsBaked] = useState(false);
     const [uvUnwrapped, setUvUnwrapped] = useState(false);
+    const [textureSize, setTextureSize] = useState(2048); // CHANGE: Default to 2048 resolution
+    const [isBaked, setIsBaked] = useState(false);
+
+    // New state for managing multiple projections
+    const [projections, setProjections] = useState([]); // Array of projection data objects
+    const [activeProjectionIndex, setActiveProjectionIndex] = useState(-1); // Currently selected projection (-1 means none)
+    const [unwrapReady, setUnwrapReady] = useState(false);
 
     // === Initialize xatlas unwrapper ===
     useEffect(() => {
@@ -52,12 +53,12 @@ function ProjectedMaterialModelDemo() {
             try {
                 setStatus('Initializing UV unwrapper...');
                 setIsLoading(true);
-                
+
                 // Create unwrapper instance
                 unwrapperRef.current = new UVUnwrapper({
                     BufferAttribute: THREE.BufferAttribute
                 });
-                
+
                 // Configure unwrapper options
                 unwrapperRef.current.chartOptions = {
                     fixWinding: false,
@@ -72,21 +73,21 @@ function ProjectedMaterialModelDemo() {
                     textureSeamWeight: 0.5,
                     useInputMeshUvs: true, // Use existing UVs if available
                 };
-                
+
                 unwrapperRef.current.packOptions = {
                     bilinear: true,
                     blockAlign: false,
                     bruteForce: false,
                     createImage: false,
                     maxChartSize: 0,
-                    padding: 2, // Add padding between UV islands
+                    padding: 8, // CHANGE: Increased padding between UV islands to prevent seams
                     resolution: textureSize,
                     rotateCharts: true,
                     rotateChartsToAxis: true,
                     texelsPerUnit: 0
                 };
-                
-                // Load the xatlas library with better logging
+
+                // Load the xatlas library
                 console.log('Starting to load xatlas library...');
                 await unwrapperRef.current.loadLibrary(
                     (mode, progress) => {
@@ -96,10 +97,9 @@ function ProjectedMaterialModelDemo() {
                     'https://cdn.jsdelivr.net/npm/xatlasjs@0.2.0/dist/xatlas.wasm',
                     'https://cdn.jsdelivr.net/npm/xatlasjs@0.2.0/dist/xatlas.js'
                 );
-                
-                console.log('xatlas library loaded. Available methods:', 
-                    Object.getOwnPropertyNames(Object.getPrototypeOf(unwrapperRef.current)));
-                
+
+                console.log('xatlas library loaded');
+
                 setUnwrapReady(true);
                 setStatus('UV unwrapper initialized and ready.');
                 setIsLoading(false);
@@ -109,15 +109,15 @@ function ProjectedMaterialModelDemo() {
                 setIsLoading(false);
             }
         };
-        
+
         initUnwrapper();
-        
+
         // Clean up
         return () => {
             unwrapperRef.current = null;
         };
     }, [textureSize]);
-    
+
     // Initialize render-to-texture renderer
     useEffect(() => {
         // Create a renderer for texture baking
@@ -126,12 +126,12 @@ function ProjectedMaterialModelDemo() {
             preserveDrawingBuffer: true
         });
         rtRendererRef.current.setSize(textureSize, textureSize);
-        
+
         // Create an orthographic camera for texture baking
         rtCameraRef.current = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
         rtCameraRef.current.position.set(0, 0, 1);
         rtCameraRef.current.lookAt(0, 0, 0);
-        
+
         // Clean up
         return () => {
             rtRendererRef.current?.dispose();
@@ -143,27 +143,32 @@ function ProjectedMaterialModelDemo() {
     const handleGlbLoad = useCallback((event) => {
         const file = event.target.files?.[0];
         if (!file) return;
+
         // --- Reset ALL relevant states ---
-        setModelReady(false); 
-        setSnapshotTaken(false); 
-        setTextureReady(false); 
-        setIsProjected(false);
+        setModelReady(false);
         setUvUnwrapped(false);
         setIsBaked(false);
-        setSnapshotCameraState(null);
-        setUploadedTexture(prev => { prev?.dispose(); return null; });
-        projectedMaterialRef.current?.dispose(); projectedMaterialRef.current = null;
-        
-        // Cleanup overlay mesh if it exists
-        if (projectionOverlayRef.current) {
-            if (meshRef.current) {
-                meshRef.current.remove(projectionOverlayRef.current);
+        setProjections([]);
+        setActiveProjectionIndex(-1);
+
+        // Clear all projection refs
+        projectionOverlaysRef.current.forEach(overlay => {
+            if (overlay && meshRef.current) {
+                meshRef.current.remove(overlay);
+                overlay.geometry?.dispose();
+                overlay.material?.dispose();
             }
-            projectionOverlayRef.current.geometry?.dispose();
-            projectionOverlayRef.current.material?.dispose();
-            projectionOverlayRef.current = null;
-        }
-        
+        });
+        projectionOverlaysRef.current = [];
+
+        projectedMaterialsRef.current.forEach(material => material?.dispose());
+        projectedMaterialsRef.current = [];
+
+        snapshotCameraStatesRef.current = [];
+
+        uploadedTexturesRef.current.forEach(texture => texture?.dispose());
+        uploadedTexturesRef.current = [];
+
         setLoadedGeometry(prev => { prev?.dispose(); return null; });
         setOriginalMaterial(prev => { prev?.dispose(); return null; });
         originalMaterialRef.current?.dispose(); originalMaterialRef.current = null;
@@ -181,7 +186,7 @@ function ProjectedMaterialModelDemo() {
                     if (child.isMesh && !foundGeometry) {
                         console.log("Found mesh in GLB:", child.name);
                         foundGeometry = child.geometry.clone();
-                        
+
                         // Store the original material (can be a single material or array)
                         if (Array.isArray(child.material)) {
                             // Handle multi-material case
@@ -190,31 +195,31 @@ function ProjectedMaterialModelDemo() {
                             // Handle single material case
                             foundMaterial = child.material.clone();
                         }
-                        
+
                         // Keep reference to the found mesh
                         foundMesh = child;
-                        
+
                         // Apply world transform to geometry
-                        child.updateMatrixWorld(true); 
+                        child.updateMatrixWorld(true);
                         foundGeometry.applyMatrix4(child.matrixWorld);
-                        
+
                         // Don't reset transforms here, as we want to preserve original state
-                        foundGeometry.computeVertexNormals(); 
-                        foundGeometry.center(); 
+                        foundGeometry.computeVertexNormals();
+                        foundGeometry.center();
                         foundGeometry.computeBoundingSphere();
                     }
                 });
-                
+
                 if (foundGeometry) {
                     console.log("Setting loaded geometry and original material state.");
                     setLoadedGeometry(foundGeometry);
-                    
+
                     if (foundMaterial) {
                         setOriginalMaterial(foundMaterial);
                         originalMaterialRef.current = foundMaterial;
                         console.log("Original material stored:", foundMaterial);
                     }
-                    
+
                     setStatus('Model loaded with original textures. First unwrap UVs before taking snapshot.');
                     setModelReady(true);
                 } else {
@@ -225,16 +230,16 @@ function ProjectedMaterialModelDemo() {
                 }
                 setIsLoading(false);
             }, (error) => {
-                 setStatus('Error loading GLB.'); console.error('Error parsing GLTF:', error);
-                 setLoadedGeometry(null);
-                 setOriginalMaterial(null);
-                 originalMaterialRef.current = null;
-                 setIsLoading(false);
+                setStatus('Error loading GLB.'); console.error('Error parsing GLTF:', error);
+                setLoadedGeometry(null);
+                setOriginalMaterial(null);
+                originalMaterialRef.current = null;
+                setIsLoading(false);
             });
         };
-        reader.onerror = () => { 
-            setStatus('Error reading GLB file.'); 
-            setIsLoading(false); 
+        reader.onerror = () => {
+            setStatus('Error reading GLB file.');
+            setIsLoading(false);
             setOriginalMaterial(null);
             originalMaterialRef.current = null;
         };
@@ -253,13 +258,12 @@ function ProjectedMaterialModelDemo() {
 
         // --- Renderer ---
         try {
-            // --- Ensure preserveDrawingBuffer is TRUE ---
             rendererRef.current = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             rendererRef.current.setSize(currentMount.clientWidth, currentMount.clientHeight);
             rendererRef.current.setPixelRatio(window.devicePixelRatio);
             rendererRef.current.shadowMap.enabled = true;
             currentMount.appendChild(rendererRef.current.domElement);
-            console.log("Renderer created and appended.", currentMount.clientWidth, currentMount.clientHeight);
+            console.log("Renderer created and appended.");
         } catch (error) {
             console.error("Error creating renderer:", error);
             return;
@@ -285,13 +289,12 @@ function ProjectedMaterialModelDemo() {
             if (!mountRef.current || !rendererRef.current || !cameraRef.current) return;
             const width = mountRef.current.clientWidth;
             const height = mountRef.current.clientHeight;
-            console.log("Resizing to:", width, height);
             if (width > 0 && height > 0) {
-                 rendererRef.current.setSize(width, height);
-                 cameraRef.current.aspect = width / height;
-                 cameraRef.current.updateProjectionMatrix();
+                rendererRef.current.setSize(width, height);
+                cameraRef.current.aspect = width / height;
+                cameraRef.current.updateProjectionMatrix();
             } else {
-                 console.warn("Resize skipped: Invalid dimensions (0).");
+                console.warn("Resize skipped: Invalid dimensions (0).");
             }
         };
         window.addEventListener('resize', handleResize);
@@ -304,8 +307,8 @@ function ProjectedMaterialModelDemo() {
             if (!isActive) return;
             requestRef.current = requestAnimationFrame(animate);
             orbitControlsRef.current?.update();
-            if(rendererRef.current && sceneRef.current && cameraRef.current) {
-                 rendererRef.current.render(sceneRef.current, cameraRef.current);
+            if (rendererRef.current && sceneRef.current && cameraRef.current) {
+                rendererRef.current.render(sceneRef.current, cameraRef.current);
             }
         };
         animate();
@@ -319,26 +322,26 @@ function ProjectedMaterialModelDemo() {
             window.removeEventListener('resize', handleResize);
             orbitControlsRef.current?.dispose();
             if (sceneRef.current) {
-                 if(ambientLight) sceneRef.current.remove(ambientLight);
-                 if(directionalLight) sceneRef.current.remove(directionalLight);
-                 if(cameraRef.current) sceneRef.current.remove(cameraRef.current);
+                if (ambientLight) sceneRef.current.remove(ambientLight);
+                if (directionalLight) sceneRef.current.remove(directionalLight);
+                if (cameraRef.current) sceneRef.current.remove(cameraRef.current);
             }
             ambientLight?.dispose();
             directionalLight?.dispose();
-            // Dispose globally managed refs
-            projectedMaterialRef.current?.dispose();
+
+            // Cleanup all projection materials and overlays
+            projectedMaterialsRef.current.forEach(material => material?.dispose());
+            projectionOverlaysRef.current.forEach(overlay => {
+                overlay?.geometry?.dispose();
+                overlay?.material?.dispose();
+            });
+
+            // Cleanup original material
             originalMaterialRef.current?.dispose();
-            
-            // Cleanup overlay mesh if it exists
-            if (projectionOverlayRef.current) {
-                projectionOverlayRef.current.geometry?.dispose();
-                projectionOverlayRef.current.material?.dispose();
-                projectionOverlayRef.current = null;
-            }
 
             if (rendererRef.current) rendererRef.current.dispose();
             if (currentMount && rendererRef.current?.domElement) {
-                try { currentMount.removeChild(rendererRef.current.domElement); } catch (e) {}
+                try { currentMount.removeChild(rendererRef.current.domElement); } catch (e) { }
             }
         };
     }, []);
@@ -354,22 +357,31 @@ function ProjectedMaterialModelDemo() {
 
         // --- Cleanup Logic ---
         if (meshRef.current && (meshRef.current.geometry !== loadedGeometry || !loadedGeometry)) {
-            console.log("Mesh Effect: Removing previous mesh. Reason:", !loadedGeometry ? "Geometry is null" : "Geometry changed");
-            
-            // Cleanup projection overlay if it exists
-            if (projectionOverlayRef.current) {
-                meshRef.current.remove(projectionOverlayRef.current);
-                projectionOverlayRef.current.geometry?.dispose();
-                projectionOverlayRef.current.material?.dispose();
-                projectionOverlayRef.current = null;
-            }
-            
+            console.log("Mesh Effect: Removing previous mesh.");
+
+            // Cleanup projection overlays
+            projectionOverlaysRef.current.forEach(overlay => {
+                if (overlay && meshRef.current) {
+                    meshRef.current.remove(overlay);
+                    overlay.geometry?.dispose();
+                    overlay.material?.dispose();
+                }
+            });
+            projectionOverlaysRef.current = [];
+
             scene.remove(meshRef.current);
-            if (meshRef.current.material && 
-                meshRef.current.material !== projectedMaterialRef.current && 
+            if (meshRef.current.material &&
                 meshRef.current.material !== originalMaterialRef.current) {
                 console.log("Mesh Effect: Disposing non-preserved material.");
-                meshRef.current.material.dispose();
+                if (Array.isArray(meshRef.current.material)) {
+                    meshRef.current.material.forEach(mat => {
+                        if (!projectedMaterialsRef.current.includes(mat)) {
+                            mat.dispose();
+                        }
+                    });
+                } else if (!projectedMaterialsRef.current.includes(meshRef.current.material)) {
+                    meshRef.current.material.dispose();
+                }
             }
             meshRef.current = null;
         }
@@ -379,16 +391,16 @@ function ProjectedMaterialModelDemo() {
             console.log("Mesh Effect: Creating new mesh...");
             try {
                 // Use original material if available, otherwise fallback to default
-                const initialMaterial = originalMaterial || new THREE.MeshStandardMaterial({ 
-                    color: 0xcccccc, 
-                    roughness: 0.7, 
+                const initialMaterial = originalMaterial || new THREE.MeshStandardMaterial({
+                    color: 0xcccccc,
+                    roughness: 0.7,
                     name: 'InitialMaterial'
                 });
-                
+
                 meshRef.current = new THREE.Mesh(loadedGeometry, initialMaterial);
                 meshRef.current.name = "LoadedMesh";
-                meshRef.current.position.set(0, 0, 0); 
-                meshRef.current.castShadow = true; 
+                meshRef.current.position.set(0, 0, 0);
+                meshRef.current.castShadow = true;
                 meshRef.current.receiveShadow = true;
                 scene.add(meshRef.current);
                 console.log("Mesh Effect: Mesh created and added to scene with material:", initialMaterial);
@@ -410,46 +422,42 @@ function ProjectedMaterialModelDemo() {
             setStatus('Unable to unwrap UVs: Mesh or unwrapper not ready.');
             return;
         }
-        
+
         try {
             setIsLoading(true);
             setStatus('Unwrapping UVs...');
-            
-            // Debug what methods are available
-            console.log('Available methods on unwrapper:', 
-                Object.getOwnPropertyNames(Object.getPrototypeOf(unwrapperRef.current)));
-            
+
             // Get the geometry of the current mesh
             const geometry = meshRef.current.geometry;
-            
+
             // Make sure the geometry is indexed
             const indexedGeometry = geometry.index ? geometry : mergeVertices(geometry);
-            
+
             // Store original material and UVs
             const originalMaterial = meshRef.current.material;
             const originalUVs = geometry.attributes.uv ? geometry.attributes.uv.clone() : null;
-            
+
             console.log('Unwrapping geometry using packAtlas...');
             // Use packAtlas instead of unwrap - this is the correct API method
             const atlas = await unwrapperRef.current.packAtlas([indexedGeometry]);
-            
+
             if (atlas && atlas.geometries && atlas.geometries[0]) {
                 // Apply the unwrapped geometry back to the mesh
                 meshRef.current.geometry = atlas.geometries[0];
                 meshRef.current.material = originalMaterial;
-                
+
                 // Store original UVs in uv2 if they existed
                 if (originalUVs) {
                     meshRef.current.geometry.setAttribute('uv2', originalUVs);
                 }
-                
+
                 console.log('UVs unwrapped successfully!');
-                setStatus('UVs unwrapped successfully! Now position view and take snapshot.');
+                setStatus('UVs unwrapped successfully! Now ready to add projections.');
                 setUvUnwrapped(true);
             } else {
                 throw new Error('Unwrapping did not return valid geometry');
             }
-            
+
         } catch (error) {
             console.error('Error unwrapping UVs:', error);
             setStatus(`Failed to unwrap UVs: ${error.message}`);
@@ -458,37 +466,47 @@ function ProjectedMaterialModelDemo() {
         }
     }, [unwrapReady]);
 
-    // === Take Snapshot & Download ===
-    const handleTakeSnapshot = useCallback(() => {
-        // Add more detailed prerequisite checks
-        if (!modelReady) { console.warn("Snapshot aborted: Model not ready."); return; }
-        if (!cameraRef.current) { console.warn("Snapshot aborted: Camera not ready."); return; }
-        if (!rendererRef.current) { console.warn("Snapshot aborted: Renderer not ready."); return; }
-        if (!sceneRef.current) { console.warn("Snapshot aborted: Scene not ready."); return; }
-        if (isLoading) { console.warn("Snapshot aborted: Still loading."); return; }
-        if (!uvUnwrapped) { console.warn("Snapshot aborted: Please unwrap UVs first."); 
-            setStatus("Please unwrap UVs before taking a snapshot."); return; }
-        if (snapshotTaken && !isProjected) { console.warn("Snapshot may be taken again, resetting flags."); }
-
-        // If we're taking a new snapshot, clean up the old projection overlay
-        if (projectionOverlayRef.current && meshRef.current) {
-            console.log("Cleaning up previous projection overlay for new snapshot");
-            meshRef.current.remove(projectionOverlayRef.current);
-            projectionOverlayRef.current.geometry?.dispose();
-            projectionOverlayRef.current.material?.dispose();
-            projectionOverlayRef.current = null;
+    // === Add New Projection ===
+    const handleAddProjection = useCallback(() => {
+        if (!uvUnwrapped || !modelReady) {
+            setStatus('Please unwrap UVs before adding projections.');
+            return;
         }
 
-        setStatus('Capturing snapshot...');
-        setIsLoading(true);
-        // Reset flags for a new snapshot cycle if needed
-        setSnapshotTaken(false);
-        setTextureReady(false);
-        setIsProjected(false);
-        setIsBaked(false);
-        setUploadedTexture(prev => { prev?.dispose(); return null; });
+        // Create a new projection entry
+        const newProjectionIndex = projections.length;
+        const newProjection = {
+            id: Date.now(),
+            name: `Projection ${newProjectionIndex + 1}`,
+            snapshotTaken: false,
+            textureLoaded: false,
+            isApplied: false,
+            opacity: 1.0
+        };
 
-        console.log("Attempting to capture snapshot...");
+        setProjections(prev => [...prev, newProjection]);
+        setActiveProjectionIndex(newProjectionIndex);
+        setStatus(`Added new projection #${newProjectionIndex + 1}. Position your camera and take a snapshot.`);
+    }, [projections, uvUnwrapped, modelReady]);
+
+    // === Take Snapshot for Current Projection ===
+    const handleTakeSnapshot = useCallback(() => {
+        if (!modelReady || !cameraRef.current || !rendererRef.current || !sceneRef.current || isLoading) {
+            return;
+        }
+
+        if (!uvUnwrapped) {
+            setStatus("Please unwrap UVs before taking a snapshot.");
+            return;
+        }
+
+        if (activeProjectionIndex === -1) {
+            setStatus("Please add a projection before taking a snapshot.");
+            return;
+        }
+
+        setStatus(`Capturing snapshot for projection #${activeProjectionIndex + 1}...`);
+        setIsLoading(true);
 
         // 1. Capture Camera State
         const cam = cameraRef.current;
@@ -501,408 +519,759 @@ function ProjectedMaterialModelDemo() {
             near: cam.near,
             far: cam.far,
         };
-        setSnapshotCameraState(stateToSave);
-        console.log("Camera state captured:", stateToSave);
+
+        // Store the camera state for this projection
+        snapshotCameraStatesRef.current[activeProjectionIndex] = stateToSave;
 
         // Use setTimeout to allow UI update and ensure render cycle completes
         setTimeout(() => {
             if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
-                console.error("Snapshot failed: Refs became invalid during timeout.");
                 setStatus("Snapshot failed: Internal error.");
                 setIsLoading(false);
-                setSnapshotCameraState(null);
+                snapshotCameraStatesRef.current[activeProjectionIndex] = null;
                 return;
             }
 
             try {
-                // 2. Force Render
-                console.log("Forcing render before capture...");
+                // Force Render
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
-                console.log("Render completed.");
 
-                // 3. Get Data URL
-                console.log("Getting Data URL...");
+                // Get Data URL
                 const dataURL = rendererRef.current.domElement.toDataURL('image/png');
 
-                // --- VERY IMPORTANT CHECK ---
                 if (!dataURL || dataURL === 'data:,') {
-                     console.error("Failed to get valid Data URL. Canvas might be blank or tainted. DataURL:", dataURL);
-                     console.log("Canvas dimensions:", rendererRef.current.domElement.width, rendererRef.current.domElement.height);
                     throw new Error('Failed to get valid image data from canvas.');
                 }
-                console.log("Data URL obtained (length):", dataURL.length);
 
-                // 4. Create download link
-                console.log("Creating download link...");
+                // Create download link
                 const link = document.createElement('a');
                 link.href = dataURL;
-                link.download = 'model_snapshot.png';
+                link.download = `projection_${activeProjectionIndex + 1}_snapshot.png`;
                 document.body.appendChild(link);
-                console.log("Clicking download link...");
                 link.click();
-                console.log("Removing download link...");
                 document.body.removeChild(link);
 
-                setStatus('Snapshot downloaded. Upload the image for projection.');
-                setSnapshotTaken(true); // Mark snapshot as done for this cycle
-                // Reset texture/projection state explicitly
-                setTextureReady(false);
-                setIsProjected(false);
-                setIsBaked(false);
+                // Update the current projection state
+                setProjections(prev => {
+                    const updated = [...prev];
+                    updated[activeProjectionIndex] = {
+                        ...updated[activeProjectionIndex],
+                        snapshotTaken: true
+                    };
+                    return updated;
+                });
+
+                setStatus(`Snapshot for projection #${activeProjectionIndex + 1} downloaded. Upload the image for projection.`);
 
             } catch (error) {
                 console.error("Error taking snapshot:", error);
                 setStatus(`Snapshot failed: ${error.message}. Check console.`);
-                setSnapshotCameraState(null);
-                setSnapshotTaken(false);
+                snapshotCameraStatesRef.current[activeProjectionIndex] = null;
             } finally {
                 setIsLoading(false);
             }
         }, 50); // 50ms delay
 
-    }, [modelReady, isLoading, isProjected, snapshotTaken, uvUnwrapped]);
+    }, [modelReady, activeProjectionIndex, isLoading, uvUnwrapped]);
 
     // === File Handling: Upload Projection Texture ===
     const handleTextureUpload = useCallback((event) => {
         const file = event.target.files?.[0];
-        if (!file || !snapshotTaken) { // Require snapshot before upload
-            console.warn("Texture upload prevented: Snapshot not taken yet.");
-            if(!snapshotTaken) setStatus("Please take a snapshot before uploading.")
-            return;
-        };
+        if (!file) return;
 
-        setTextureReady(false);
-        setIsProjected(false);
-        setIsBaked(false);
+        // Check if we have an active projection with a snapshot
+        if (activeProjectionIndex === -1) {
+            setStatus("Please add a projection before uploading a texture.");
+            return;
+        }
+
+        const activeProjection = projections[activeProjectionIndex];
+        if (!activeProjection?.snapshotTaken) {
+            setStatus("Please take a snapshot for this projection before uploading a texture.");
+            return;
+        }
+
+        setIsLoading(true);
+        setStatus(`Loading texture for projection #${activeProjectionIndex + 1}...`);
 
         const reader = new FileReader();
         reader.onload = (e) => {
-             setIsLoading(true); setStatus('Loading texture...');
-             const loader = new THREE.TextureLoader();
-             loader.load(e.target.result, (texture) => {
-                 setUploadedTexture(prev => {
-                     prev?.dispose();
-                     texture.needsUpdate = true; texture.minFilter = THREE.LinearFilter; texture.magFilter = THREE.LinearFilter;
-                     texture.wrapS = THREE.ClampToEdgeWrapping; texture.wrapT = THREE.ClampToEdgeWrapping; texture.generateMipmaps = false;
-                     return texture;
-                 });
-                 setStatus('Texture uploaded. Click Project.');
-                 setTextureReady(true);
-                 setIsLoading(false);
-             }, undefined, (error) => {
-                 setStatus('Error loading texture.'); console.error('Error loading texture:', error);
-                 setUploadedTexture(prev => { prev?.dispose(); return null; });
-                 setIsLoading(false);
-             });
-         };
-         reader.onerror = () => { setStatus('Error reading image file.'); setIsLoading(false); };
-         reader.readAsDataURL(file); event.target.value = '';
-    }, [snapshotTaken]);
+            const loader = new THREE.TextureLoader();
+            loader.load(e.target.result, (texture) => {
+                // Store the texture for this projection
+                if (uploadedTexturesRef.current[activeProjectionIndex]) {
+                    uploadedTexturesRef.current[activeProjectionIndex].dispose();
+                }
 
-    // === Project Uploaded Image ===
-    const handleProject = useCallback(() => {
-        // Check all prerequisites clearly
-        if (!meshRef.current) { console.warn("Project aborted: Mesh not ready."); return; }
-        if (!snapshotCameraState) { console.warn("Project aborted: Snapshot state missing."); return; }
-        if (!uploadedTexture) { console.warn("Project aborted: Texture not uploaded."); return; }
-        if (isLoading) { console.warn("Project aborted: Still loading."); return; }
-        if (isProjected) { console.warn("Project aborted: Already projected."); return; }
+                texture.needsUpdate = true;
+                // CHANGE: Use mipmapping and proper filtering
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.wrapS = THREE.ClampToEdgeWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.generateMipmaps = true;
+                texture.anisotropy = 4; // Add anisotropic filtering to reduce texture aliasing
 
-        setIsLoading(true); setStatus('Projecting texture...');
-        let tempCamera = null;
+                uploadedTexturesRef.current[activeProjectionIndex] = texture;
+
+                // Update state
+                setProjections(prev => {
+                    const updated = [...prev];
+                    updated[activeProjectionIndex] = {
+                        ...updated[activeProjectionIndex],
+                        textureLoaded: true
+                    };
+                    return updated;
+                });
+
+                setStatus(`Texture uploaded for projection #${activeProjectionIndex + 1}. Click Apply Projection.`);
+                setIsLoading(false);
+            }, undefined, (error) => {
+                setStatus(`Error loading texture: ${error.message}`);
+                console.error('Error loading texture:', error);
+                setIsLoading(false);
+            });
+        };
+        reader.onerror = () => {
+            setStatus('Error reading image file.');
+            setIsLoading(false);
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }, [projections, activeProjectionIndex]);
+
+    // === Apply Current Projection ===
+    const handleApplyProjection = useCallback(() => {
+        if (!meshRef.current) {
+            console.warn("Apply projection aborted: Mesh not ready.");
+            return;
+        }
+
+        if (activeProjectionIndex === -1) {
+            setStatus("Please select a projection to apply.");
+            return;
+        }
+
+        const projectionData = projections[activeProjectionIndex];
+        if (!projectionData.textureLoaded) {
+            setStatus("Please upload a texture for this projection first.");
+            return;
+        }
+
+        const cameraState = snapshotCameraStatesRef.current[activeProjectionIndex];
+        if (!cameraState) {
+            setStatus("Missing camera state for this projection.");
+            return;
+        }
+
+        const texture = uploadedTexturesRef.current[activeProjectionIndex];
+        if (!texture) {
+            setStatus("Missing texture for this projection.");
+            return;
+        }
+
+        setIsLoading(true);
+        setStatus(`Applying projection #${activeProjectionIndex + 1}...`);
 
         setTimeout(() => {
             try {
-                // Create temporary camera using *stored state*
-                tempCamera = new THREE.PerspectiveCamera(
-                    snapshotCameraState.fov, snapshotCameraState.aspect,
-                    snapshotCameraState.near, snapshotCameraState.far
+                // Create temporary camera using stored state
+                const tempCamera = new THREE.PerspectiveCamera(
+                    cameraState.fov, cameraState.aspect,
+                    cameraState.near, cameraState.far
                 );
-                tempCamera.position.copy(snapshotCameraState.position);
-                tempCamera.quaternion.copy(snapshotCameraState.quaternion);
+                tempCamera.position.copy(cameraState.position);
+                tempCamera.quaternion.copy(cameraState.quaternion);
                 tempCamera.updateMatrixWorld();
-                console.log("Temporary projection camera created from saved state.");
 
-                // Clean up previous projection if exists
-                if (projectionOverlayRef.current) {
-                    console.log("Removing previous projection overlay");
-                    meshRef.current.remove(projectionOverlayRef.current);
-                    projectionOverlayRef.current.geometry?.dispose();
-                    projectionOverlayRef.current.material?.dispose();
-                    projectionOverlayRef.current = null;
+                // Clean up previous projection overlay for this index if it exists
+                if (projectionOverlaysRef.current[activeProjectionIndex]) {
+                    meshRef.current.remove(projectionOverlaysRef.current[activeProjectionIndex]);
+                    projectionOverlaysRef.current[activeProjectionIndex].geometry?.dispose();
+                    projectionOverlaysRef.current[activeProjectionIndex].material?.dispose();
+                    projectionOverlaysRef.current[activeProjectionIndex] = null;
+                }
+
+                // Clean up previous material if it exists
+                if (projectedMaterialsRef.current[activeProjectionIndex]) {
+                    projectedMaterialsRef.current[activeProjectionIndex].dispose();
+                    projectedMaterialsRef.current[activeProjectionIndex] = null;
                 }
 
                 // Create a new projection material
                 const projectionMaterial = new ProjectedMaterial({
                     camera: tempCamera,
-                    texture: uploadedTexture,
+                    texture: texture,
                     color: 0xffffff,
                     roughness: 0.8,
                     metalness: 0.1,
-                    textureScale: 1.0,
                     backgroundOpacity: 0.0,  // Make non-projected areas transparent
-                    cover: false,             // Cover the entire visible area
-                    transparent: true,       // Enable transparency for blending
-                    opacity: 1,            // Slightly transparent to see original texture
-                    side: THREE.FrontSide,   // Only render front faces
-                    depthTest: true,         // Add this to respect occlusion
-                    depthWrite: true,        // Add this to ensure proper depth writing
+                    cover: false,
+                    transparent: true,
+                    opacity: projectionData.opacity || 1.0,
+                    side: THREE.FrontSide,
+                    depthTest: true,
+                    depthWrite: true,
                 });
-                
+
                 // Store the material reference
-                projectedMaterialRef.current = projectionMaterial;
+                projectedMaterialsRef.current[activeProjectionIndex] = projectionMaterial;
 
-                // Create a clone of the mesh to use as an overlay
+                // Create a clone of the mesh geometry for this overlay
                 const overlayGeometry = meshRef.current.geometry.clone();
-                projectionOverlayRef.current = new THREE.Mesh(overlayGeometry, projectionMaterial);
-                projectionOverlayRef.current.name = 'projectionOverlay';
-                
-                // Scale slightly larger to avoid z-fighting (1.001 = 0.1% larger)
-                projectionOverlayRef.current.scale.set(1.00, 1.00, 1.000);
-                
-                // Add the overlay as a child of the original mesh
-                meshRef.current.add(projectionOverlayRef.current);
-                
-                // Project the material onto the overlay mesh
-                projectionMaterial.project(projectionOverlayRef.current);
+                const overlay = new THREE.Mesh(overlayGeometry, projectionMaterial);
+                overlay.name = `projection_overlay_${activeProjectionIndex}`;
 
-                setStatus('Projection overlaid on top of original textures! Ready to bake texture.');
-                setIsProjected(true);
-                console.log("Projection overlay created and applied successfully");
+                // Scale slightly to avoid z-fighting
+                // Use different scale factors for each projection to prevent fighting between overlays
+                const scaleFactor = 1.0 + (activeProjectionIndex * 0.0001);
+                overlay.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                // Add the overlay as a child of the original mesh
+                meshRef.current.add(overlay);
+
+                // Store the overlay reference
+                projectionOverlaysRef.current[activeProjectionIndex] = overlay;
+
+                // Project the material onto the overlay mesh
+                projectionMaterial.project(overlay);
+
+                // Update projection state
+                setProjections(prev => {
+                    const updated = [...prev];
+                    updated[activeProjectionIndex] = {
+                        ...updated[activeProjectionIndex],
+                        isApplied: true
+                    };
+                    return updated;
+                });
+
+                setStatus(`Projection #${activeProjectionIndex + 1} applied successfully!`);
 
             } catch (error) {
-                console.error("Error during projection:", error);
+                console.error("Error applying projection:", error);
                 setStatus(`Projection failed: ${error.message}`);
-                
+
                 // Clean up on error
-                if (projectionOverlayRef.current) {
-                    meshRef.current.remove(projectionOverlayRef.current);
-                    projectionOverlayRef.current.geometry?.dispose();
-                    projectionOverlayRef.current.material?.dispose();
-                    projectionOverlayRef.current = null;
+                if (projectionOverlaysRef.current[activeProjectionIndex]) {
+                    meshRef.current.remove(projectionOverlaysRef.current[activeProjectionIndex]);
+                    projectionOverlaysRef.current[activeProjectionIndex].geometry?.dispose();
+                    projectionOverlaysRef.current[activeProjectionIndex].material?.dispose();
+                    projectionOverlaysRef.current[activeProjectionIndex] = null;
                 }
-                
-                projectedMaterialRef.current?.dispose();
-                projectedMaterialRef.current = null;
-                setIsProjected(false);
-                
+
+                if (projectedMaterialsRef.current[activeProjectionIndex]) {
+                    projectedMaterialsRef.current[activeProjectionIndex].dispose();
+                    projectedMaterialsRef.current[activeProjectionIndex] = null;
+                }
+
             } finally {
-                tempCamera?.clear();
                 setIsLoading(false);
             }
-        }, 10);
+        }, 50);
 
-    }, [snapshotCameraState, uploadedTexture, isLoading, isProjected]);
-    
-    // Function to remove the projection overlay
-    const handleRevertToOriginal = useCallback(() => {
-        if (!meshRef.current || !projectionOverlayRef.current) {
-            console.warn("Cannot revert: No projection overlay exists");
-            return;
-        }
-        
-        // Remove the projection overlay
-        meshRef.current.remove(projectionOverlayRef.current);
-        
-        // Dispose resources
-        projectionOverlayRef.current.geometry?.dispose();
-        projectionOverlayRef.current.material?.dispose();
-        projectionOverlayRef.current = null;
-        
-        projectedMaterialRef.current?.dispose();
-        projectedMaterialRef.current = null;
-        
-        setStatus('Removed projection overlay. Original texture visible.');
-        setIsProjected(false);
-        setIsBaked(false);
+    }, [projections, activeProjectionIndex, meshRef]);
+
+    // === Handle Select Projection ===
+    const handleSelectProjection = useCallback((index) => {
+        setActiveProjectionIndex(index);
+        setStatus(`Selected projection #${index + 1}.`);
     }, []);
-    
-    // Add a function to adjust the opacity of the projection
+
+    // === Handle Delete Projection ===
+    const handleDeleteProjection = useCallback((index) => {
+        // Clean up resources for this projection
+        if (projectionOverlaysRef.current[index]) {
+            if (meshRef.current) {
+                meshRef.current.remove(projectionOverlaysRef.current[index]);
+            }
+            projectionOverlaysRef.current[index].geometry?.dispose();
+            projectionOverlaysRef.current[index].material?.dispose();
+        }
+
+        if (projectedMaterialsRef.current[index]) {
+            projectedMaterialsRef.current[index].dispose();
+        }
+
+        if (uploadedTexturesRef.current[index]) {
+            uploadedTexturesRef.current[index].dispose();
+        }
+
+        // Remove from arrays
+        projectionOverlaysRef.current = projectionOverlaysRef.current.filter((_, i) => i !== index);
+        projectedMaterialsRef.current = projectedMaterialsRef.current.filter((_, i) => i !== index);
+        uploadedTexturesRef.current = uploadedTexturesRef.current.filter((_, i) => i !== index);
+        snapshotCameraStatesRef.current = snapshotCameraStatesRef.current.filter((_, i) => i !== index);
+
+        // Update state
+        setProjections(prev => prev.filter((_, i) => i !== index));
+
+        // If we deleted the active projection, select another one
+        if (activeProjectionIndex === index) {
+            if (projections.length > 1) {
+                setActiveProjectionIndex(index > 0 ? index - 1 : 0);
+            } else {
+                setActiveProjectionIndex(-1);
+            }
+        } else if (activeProjectionIndex > index) {
+            // Adjust active index if we deleted one before it
+            setActiveProjectionIndex(activeProjectionIndex - 1);
+        }
+
+        setStatus(`Deleted projection #${index + 1}.`);
+    }, [projections, activeProjectionIndex, meshRef]);
+
+    // === Adjust Projection Opacity ===
     const handleAdjustProjectionOpacity = useCallback((opacity) => {
-        if (!projectionOverlayRef.current || !projectionOverlayRef.current.material) {
+        if (activeProjectionIndex === -1) {
+            return;
+        }
+
+        if (!projectionOverlaysRef.current[activeProjectionIndex] ||
+            !projectionOverlaysRef.current[activeProjectionIndex].material) {
+            return;
+        }
+
+        // Adjust opacity
+        projectionOverlaysRef.current[activeProjectionIndex].material.opacity = opacity;
+        projectionOverlaysRef.current[activeProjectionIndex].material.needsUpdate = true;
+
+        // Update state
+        setProjections(prev => {
+            const updated = [...prev];
+            updated[activeProjectionIndex] = {
+                ...updated[activeProjectionIndex],
+                opacity
+            };
+            return updated;
+        });
+
+        setStatus(`Adjusted opacity of projection #${activeProjectionIndex + 1} to ${opacity.toFixed(2)}`);
+    }, [activeProjectionIndex]);
+
+    // === Toggle Projection Visibility ===
+    const handleToggleProjectionVisibility = useCallback((index) => {
+        if (!projectionOverlaysRef.current[index]) {
+            return;
+        }
+
+        // Toggle visibility
+        projectionOverlaysRef.current[index].visible = !projectionOverlaysRef.current[index].visible;
+
+        // Update state
+        setProjections(prev => {
+            const updated = [...prev];
+            updated[index] = {
+                ...updated[index],
+                visible: projectionOverlaysRef.current[index].visible
+            };
+            return updated;
+        });
+
+        setStatus(`${projectionOverlaysRef.current[index].visible ? 'Showed' : 'Hid'} projection #${index + 1}.`);
+    }, []);
+
+    // CHANGE: Add helper function for texture dilation
+    const dilatePixels = useCallback(async (pixelBuffer, width, height, iterations = 3) => {
+        const result = new Uint8Array(pixelBuffer);
+        const temp = new Uint8Array(pixelBuffer.length);
+        
+        for (let iteration = 0; iteration < iterations; iteration++) {
+            // Copy current result to temp buffer
+            for (let i = 0; i < result.length; i++) {
+                temp[i] = result[i];
+            }
+            
+            // Perform dilation
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Skip if pixel already has color
+                    if (temp[idx+3] > 128) continue;
+                    
+                    // Check neighbors (8-connected neighborhood)
+                    let hasNeighbor = false;
+                    let r = 0, g = 0, b = 0, count = 0;
+                    
+                    // Check 8 neighbors
+                    const neighbors = [
+                        {x: x+1, y: y}, {x: x-1, y: y},
+                        {x: x, y: y+1}, {x: x, y: y-1},
+                        {x: x+1, y: y+1}, {x: x-1, y: y-1},
+                        {x: x+1, y: y-1}, {x: x-1, y: y+1}
+                    ];
+                    
+                    for (const n of neighbors) {
+                        if (n.x < 0 || n.x >= width || n.y < 0 || n.y >= height) continue;
+                        
+                        const nIdx = (n.y * width + n.x) * 4;
+                        if (temp[nIdx+3] > 128) {
+                            r += temp[nIdx];
+                            g += temp[nIdx+1];
+                            b += temp[nIdx+2];
+                            count++;
+                            hasNeighbor = true;
+                        }
+                    }
+                    
+                    if (hasNeighbor) {
+                        result[idx] = Math.round(r/count);
+                        result[idx+1] = Math.round(g/count);
+                        result[idx+2] = Math.round(b/count);
+                        result[idx+3] = 255; // Full alpha
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }, []);
+
+    // === Bake All Projections into a Single Texture ===
+    const handleBakeAllProjections = useCallback(async () => {
+        if (!meshRef.current) {
+            setStatus('Cannot bake: No mesh available.');
             return;
         }
         
-        // Adjust opacity
-        projectionOverlayRef.current.material.opacity = opacity;
-        projectionOverlayRef.current.material.needsUpdate = true;
-        
-        setStatus(`Adjusted projection opacity to ${opacity.toFixed(2)}`);
-    }, []);
-
-    const handleBakeTexture = useCallback(async () => {
-        if (!meshRef.current || !projectionOverlayRef.current || !isProjected) {
-            setStatus('Cannot bake: No projection active.');
+        // Check if we have any applied projections
+        const appliedProjections = projections.filter(p => p.isApplied);
+        if (appliedProjections.length === 0) {
+            setStatus('Cannot bake: No projections have been applied.');
             return;
         }
         
         try {
             setIsLoading(true);
-            setStatus('Baking texture in two passes...');
+            setStatus('Baking all projections into a single texture...');
             
-            // Get the projection material and original material
-            const projMaterial = projectionOverlayRef.current.material;
-            const originalMat = meshRef.current.material;
-            const originalTexture = originalMat.map;
-            
-            if (!projMaterial) {
-                throw new Error('Cannot access projection material');
+            // Find all valid projections
+            const validProjectionIndices = [];
+            for (let i = 0; i < projections.length; i++) {
+                if (projections[i].isApplied && 
+                    projectionOverlaysRef.current[i] && 
+                    uploadedTexturesRef.current[i] &&
+                    projectionOverlaysRef.current[i].visible !== false) {
+                    validProjectionIndices.push(i);
+                }
             }
             
-            // 1. Create a render target for the projection and original texture
+            console.log(`Found ${validProjectionIndices.length} valid projections to bake`);
+            
+            if (validProjectionIndices.length === 0) {
+                throw new Error('No valid projections found to bake');
+            }
+            
+            // Create a render target with proper settings
             const renderTarget = new THREE.WebGLRenderTarget(textureSize, textureSize, {
                 minFilter: THREE.LinearFilter,
                 magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat,
-                type: THREE.UnsignedByteType
+                type: THREE.UnsignedByteType,
+                // CHANGE: Added these for better quality
+                anisotropy: 4, 
+                generateMipmaps: true
             });
             
-            // 2. Create a shader material that captures BOTH the original texture and the projection
-            const bakingMaterial = new THREE.ShaderMaterial({
-                uniforms: {
-                    projectedTexture: { value: uploadedTexture },
-                    originalTexture: { value: originalTexture },
-                    viewMatrixCamera: { value: projMaterial.uniforms.viewMatrixCamera?.value || new THREE.Matrix4() },
-                    projectionMatrixCamera: { value: projMaterial.uniforms.projectionMatrixCamera?.value || new THREE.Matrix4() },
-                    savedModelMatrix: { value: projMaterial.uniforms.savedModelMatrix?.value || new THREE.Matrix4() },
-                    projPosition: { value: projMaterial.uniforms.projPosition?.value || new THREE.Vector3() },
-                    projDirection: { value: projMaterial.uniforms.projDirection?.value || new THREE.Vector3(0, 0, -1) },
-                    widthScaled: { value: projMaterial.uniforms.widthScaled?.value || 1.0 },
-                    heightScaled: { value: projMaterial.uniforms.heightScaled?.value || 1.0 },
-                    textureOffset: { value: projMaterial.uniforms.textureOffset?.value || new THREE.Vector2() },
-                    hasOriginalTexture: { value: originalTexture ? 1.0 : 0.0 }
-                },
-                vertexShader: `
-                    uniform mat4 viewMatrixCamera;
-                    uniform mat4 projectionMatrixCamera;
-                    uniform mat4 savedModelMatrix;
+            // Get the original material and texture
+            const originalMat = originalMaterialRef.current;
+            const originalTexture = originalMat && originalMat.map ? originalMat.map : null;
+            
+            // === DIRECT APPROACH: Create a single custom shader that combines all projections ===
+            
+            // Set up uniforms
+            const uniforms = {
+                originalTexture: { value: originalTexture },
+                hasOriginalTexture: { value: originalTexture ? 1.0 : 0.0 },
+                numProjections: { value: validProjectionIndices.length },
+                // CHANGE: Add texture sampling bias for anti-aliasing
+                samplingBias: { value: 0.003 }
+            };
+            
+            // Add uniforms for each valid projection
+            validProjectionIndices.forEach((projIndex, i) => {
+                // Get the required references
+                const projMaterial = projectedMaterialsRef.current[projIndex];
+                const projTexture = uploadedTexturesRef.current[projIndex];
+                
+                if (!projMaterial || !projTexture) {
+                    console.warn(`Missing material or texture for projection ${projIndex}`);
+                    return;
+                }
+                
+                console.log(`Adding uniforms for projection ${projIndex} at shader index ${i}`);
+                
+                // Add required uniforms
+                uniforms[`projTexture${i}`] = { value: projTexture };
+                uniforms[`viewMatrix${i}`] = { 
+                    value: projMaterial.uniforms.viewMatrixCamera?.value || new THREE.Matrix4() 
+                };
+                uniforms[`projMatrix${i}`] = { 
+                    value: projMaterial.uniforms.projectionMatrixCamera?.value || new THREE.Matrix4() 
+                };
+                uniforms[`modelMatrix${i}`] = { 
+                    value: projMaterial.uniforms.savedModelMatrix?.value || new THREE.Matrix4() 
+                };
+                
+                // Additional uniforms that might be used in the projected material
+                if (projMaterial.uniforms.projPosition) {
+                    uniforms[`projPosition${i}`] = { value: projMaterial.uniforms.projPosition.value };
+                }
+                
+                if (projMaterial.uniforms.projDirection) {
+                    uniforms[`projDirection${i}`] = { value: projMaterial.uniforms.projDirection.value };
+                }
+                
+                if (projMaterial.uniforms.widthScaled) {
+                    uniforms[`widthScaled${i}`] = { value: projMaterial.uniforms.widthScaled.value };
+                }
+                
+                if (projMaterial.uniforms.heightScaled) {
+                    uniforms[`heightScaled${i}`] = { value: projMaterial.uniforms.heightScaled.value };
+                }
+                
+                if (projMaterial.uniforms.textureOffset) {
+                    uniforms[`textureOffset${i}`] = { value: projMaterial.uniforms.textureOffset.value };
+                }
+                
+                // Add opacity uniform
+                uniforms[`opacity${i}`] = { value: projections[projIndex].opacity || 1.0 };
+            });
+            
+            // Create vertex shader
+            let vertexShader = `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vWorldPosition;
+            `;
+            
+            // Add varying declarations for each projection
+            validProjectionIndices.forEach((_, i) => {
+                vertexShader += `varying vec4 vTexCoords${i};\n`;
+            });
+            
+            // Add uniform declarations for matrices
+            validProjectionIndices.forEach((_, i) => {
+                vertexShader += `
+                    uniform mat4 viewMatrix${i};
+                    uniform mat4 projMatrix${i};
+                    uniform mat4 modelMatrix${i};
+                `;
+            });
+            
+            // Complete the vertex shader with main function
+            vertexShader += `
+                void main() {
+                    vUv = uv;
                     
-                    varying vec2 vUv;
-                    varying vec3 vNormal;
-                    varying vec3 vWorldPosition;
-                    varying vec4 vTexCoords;
+                    // Calculate normal in world space - needed for front/back face detection
+                    vNormal = normalize(normalMatrix * normal);
                     
-                    void main() {
-                        vUv = uv;
-                        // Get normal in world space - critical for correct projection visibility
-                        vNormal = normalize(mat3(savedModelMatrix) * normal);
-                        
-                        // Get world position - needed for both projection and face direction test
-                        vec4 worldPosition = savedModelMatrix * vec4(position, 1.0);
-                        vWorldPosition = worldPosition.xyz;
-                        
-                        // Project using the projection camera
-                        vTexCoords = projectionMatrixCamera * viewMatrixCamera * worldPosition;
-                        
-                        // For the render target, use the UVs directly
-                        gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform sampler2D projectedTexture;
-                    uniform sampler2D originalTexture;
-                    uniform float hasOriginalTexture;
-                    uniform vec3 projPosition;
-                    uniform vec3 projDirection;
-                    uniform vec2 textureOffset;
-                    uniform float widthScaled;
-                    uniform float heightScaled;
+                    // Calculate world position - needed for projection
+                    vec4 worldPos = modelViewMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPos.xyz;
+            `;
+            
+            // Add texture coordinate calculations for each projection
+            validProjectionIndices.forEach((_, i) => {
+                vertexShader += `
+                    // Calculate projection coordinates for projection ${i}
+                    vTexCoords${i} = projMatrix${i} * viewMatrix${i} * modelMatrix${i} * vec4(position, 1.0);
+                `;
+            });
+            
+            // Close the main function
+            vertexShader += `
+                    // Position in UV space for render target
+                    gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
+                }
+            `;
+            
+            // Create fragment shader
+            let fragmentShader = `
+                uniform sampler2D originalTexture;
+                uniform float hasOriginalTexture;
+                uniform int numProjections;
+                uniform float samplingBias;
+                
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vWorldPosition;
+                
+                // Function to map values from one range to another
+                float mapRange(float value, float min1, float max1, float min2, float max2) {
+                    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+                }
+                
+                // CHANGE: Added edge sampling function to eliminate seams
+                vec4 sampleWithBias(sampler2D tex, vec2 uv, float bias) {
+                    // Sample center and 4 slightly offset positions
+                    vec4 center = texture2D(tex, uv);
+                    if (center.a > 0.1) return center; // Use center if it has alpha
                     
-                    varying vec2 vUv;
-                    varying vec3 vNormal;
-                    varying vec3 vWorldPosition;
-                    varying vec4 vTexCoords;
+                    // Sample neighboring pixels if center has no alpha
+                    vec4 colors[4];
+                    colors[0] = texture2D(tex, uv + vec2(bias, 0.0));
+                    colors[1] = texture2D(tex, uv + vec2(-bias, 0.0));
+                    colors[2] = texture2D(tex, uv + vec2(0.0, bias));
+                    colors[3] = texture2D(tex, uv + vec2(0.0, -bias));
                     
-                    float mapRange(float value, float min1, float max1, float min2, float max2) {
-                        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
-                    }
+                    vec4 result = vec4(0.0);
+                    float totalWeight = 0.0;
                     
-                    void main() {
-                        // Start with original texture or default color if none
-                        vec4 originalColor = vec4(0.5, 0.5, 0.5, 1.0);  // Default gray if no texture
-                        if (hasOriginalTexture > 0.5) {
-                            originalColor = texture2D(originalTexture, vUv);
+                    for (int i = 0; i < 4; i++) {
+                        if (colors[i].a > 0.1) {
+                            result += colors[i];
+                            totalWeight += 1.0;
                         }
+                    }
+                    
+                    if (totalWeight > 0.0) {
+                        return result / totalWeight;
+                    }
+                    
+                    return center;
+                }
+            `;
+            
+            // Add uniforms and varyings for each projection
+            validProjectionIndices.forEach((_, i) => {
+                fragmentShader += `
+                    uniform sampler2D projTexture${i};
+                    uniform float opacity${i};
+                    varying vec4 vTexCoords${i};
+                `;
+                
+                // Add optional uniforms
+                fragmentShader += `
+                    uniform vec3 projPosition${i};
+                    uniform vec3 projDirection${i};
+                    uniform float widthScaled${i};
+                    uniform float heightScaled${i};
+                    uniform vec2 textureOffset${i};
+                `;
+            });
+            
+            // Start the main function
+            fragmentShader += `
+                void main() {
+                    // Start with original texture or default color
+                    vec4 finalColor = vec4(0.5, 0.5, 0.5, 1.0);  // Default gray
+                    
+                    if (hasOriginalTexture > 0.5) {
+                        finalColor = texture2D(originalTexture, vUv);
+                    }
+            `;
+            
+            // Add processing for each projection
+            validProjectionIndices.forEach((_, i) => {
+                fragmentShader += `
+                    // Process projection ${i}
+                    {
+                        float w = max(vTexCoords${i}.w, 0.001);
+                        vec2 projUv = (vTexCoords${i}.xy / w) * 0.5 + 0.5;
                         
-                        // Apply the projection logic exactly as in the ProjectedMaterial
-                        float w = max(vTexCoords.w, 0.0);
-                        vec2 projUv = (vTexCoords.xy / w) * 0.5 + 0.5;
-                        projUv += textureOffset;
+                        // Apply texture offset
+                        projUv += textureOffset${i};
                         
-                        // Apply scaling exactly as in ProjectedMaterial
-                        projUv.x = mapRange(projUv.x, 0.0, 1.0, 0.5 - widthScaled / 2.0, 0.5 + widthScaled / 2.0);
-                        projUv.y = mapRange(projUv.y, 0.0, 1.0, 0.5 - heightScaled / 2.0, 0.5 + heightScaled / 2.0);
+                        // Apply scaling
+                        projUv.x = mapRange(projUv.x, 0.0, 1.0, 0.5 - widthScaled${i} / 2.0, 0.5 + widthScaled${i} / 2.0);
+                        projUv.y = mapRange(projUv.y, 0.0, 1.0, 0.5 - heightScaled${i} / 2.0, 0.5 + heightScaled${i} / 2.0);
                         
-                        // Check if we're inside texture bounds
-                        bool isInTexture = (max(projUv.x, projUv.y) <= 1.0 && min(projUv.x, projUv.y) >= 0.0);
+                        // Check if projection is valid (in bounds with some margin to avoid artifacts at edges)
+                        bool isInBounds = projUv.x >= 0.001 && projUv.x <= 0.999 && 
+                                         projUv.y >= 0.001 && projUv.y <= 0.999;
                         
-                        // Calculate projection direction - IMPORTANT: use normalized direction
-                        vec3 projectorDirection = normalize(projPosition - vWorldPosition);
+                        // Calculate direction from camera to fragment
+                        vec3 projDir = normalize(projPosition${i} - vWorldPosition);
                         
-                        // Dot product with normal determines if face is visible to projector
-                        // Using a smaller epsilon to catch more faces
-                        float dotProduct = dot(vNormal, projectorDirection);
-                        bool isFacingProjector = dotProduct > -0.2; // More permissive to catch more faces
+                        // Check if fragment faces camera (within reasonable angle)
+                        float dotProduct = dot(vNormal, projDir);
+                        bool isFacing = dotProduct > -0.2;  // Generous threshold to catch more faces
                         
-                        // Final color starts with original
-                        vec4 finalColor = originalColor;
-                        
-                        // If projection should be applied
-                        if (isFacingProjector && isInTexture) {
-                            vec4 projectedColor = texture2D(projectedTexture, projUv);
+                        if (isInBounds && isFacing) {
+                            // CHANGE: Use the seam-fixing sampling function
+                            vec4 projColor = sampleWithBias(projTexture${i}, projUv, samplingBias);
                             
-                            // Only apply where projection has alpha
-                            if (projectedColor.a > 0.01) {
-                                // Blend projected color over original
-                                finalColor = vec4(
-                                    mix(originalColor.rgb, projectedColor.rgb, projectedColor.a),
-                                    max(originalColor.a, projectedColor.a)
-                                );
+                            // Only apply where the projection has alpha
+                            if (projColor.a > 0.01) {
+                                // Calculate effective alpha based on texture alpha and projection opacity
+                                float effectiveAlpha = projColor.a * opacity${i};
+                                
+                                // Blend the projected color with current result
+                                finalColor.rgb = mix(finalColor.rgb, projColor.rgb, effectiveAlpha);
+                                finalColor.a = max(finalColor.a, projColor.a);
                             }
                         }
-                        
-                        gl_FragColor = finalColor;
                     }
-                `,
-                side: THREE.DoubleSide // Render both sides to catch all faces
+                `;
             });
             
-            // 3. Create a scene for baking
-            const bakingScene = new THREE.Scene();
+            // Close the main function
+            fragmentShader += `
+                    // Ensure output has full alpha
+                    finalColor.a = 1.0;
+                    
+                    gl_FragColor = finalColor;
+                }
+            `;
             
-            // Clone geometry to ensure we don't modify the original
-            const geometry = meshRef.current.geometry.clone();
-            const bakingMesh = new THREE.Mesh(geometry, bakingMaterial);
+            // Create the custom shader material
+            const bakingMaterial = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                side: THREE.DoubleSide
+            });
+            
+            // DEBUG: Log shader code 
+            console.log("=== Vertex Shader ===");
+            console.log(vertexShader);
+            
+            console.log("=== Fragment Shader ===");
+            console.log(fragmentShader);
+            
+            // Create baking mesh
+            const bakingGeometry = meshRef.current.geometry.clone();
+            const bakingMesh = new THREE.Mesh(bakingGeometry, bakingMaterial);
+            
+            // Create a scene for baking
+            const bakingScene = new THREE.Scene();
             bakingScene.add(bakingMesh);
             
-            // 4. Setup an orthographic camera for UV rendering
+            // Setup an orthographic camera for UV rendering
             const bakingCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
             
-            // 5. Render to the texture
+            // Render to the texture
             rendererRef.current.setRenderTarget(renderTarget);
             rendererRef.current.setClearColor(0x000000, 0);
             rendererRef.current.clear();
             rendererRef.current.render(bakingScene, bakingCamera);
             rendererRef.current.setRenderTarget(null);
             
-            // 6. Create a texture from the render target
+            // Create a texture from the render target
             const pixelBuffer = new Uint8Array(4 * textureSize * textureSize);
             rendererRef.current.readRenderTargetPixels(
                 renderTarget, 0, 0, textureSize, textureSize, pixelBuffer
             );
             
-            // 7. Optional: Enhance contrast and brightness slightly
-            for (let i = 0; i < pixelBuffer.length; i += 4) {
-                // Boost contrast and brightness slightly
-                pixelBuffer[i] = Math.min(255, pixelBuffer[i] * 1.1);
-                pixelBuffer[i+1] = Math.min(255, pixelBuffer[i+1] * 1.1);
-                pixelBuffer[i+2] = Math.min(255, pixelBuffer[i+2] * 1.1);
-                // Leave alpha as is
+            // CHANGE: Run the dilation process to fix seams
+            setStatus('Processing texture to fix seams...');
+            const dilatedPixels = await dilatePixels(pixelBuffer, textureSize, textureSize, 3);
+            
+            // Enhance contrast and brightness slightly
+            for (let i = 0; i < dilatedPixels.length; i += 4) {
+                // Boost color slightly and add a small minimum value to avoid pure black
+                dilatedPixels[i] = Math.min(255, dilatedPixels[i] * 1.1 + 5);
+                dilatedPixels[i+1] = Math.min(255, dilatedPixels[i+1] * 1.1 + 5);
+                dilatedPixels[i+2] = Math.min(255, dilatedPixels[i+2] * 1.1 + 5);
+                dilatedPixels[i+3] = 255; // Full alpha
             }
             
-            // 8. Create the final baked texture
+            // Create the final baked texture
             const bakedTexture = new THREE.DataTexture(
-                pixelBuffer,
+                dilatedPixels,
                 textureSize,
                 textureSize,
                 THREE.RGBAFormat
@@ -910,97 +1279,110 @@ function ProjectedMaterialModelDemo() {
             bakedTexture.needsUpdate = true;
             bakedTexture.flipY = true;
             
+            // CHANGE: Add proper filtering to baked texture
+            bakedTexture.minFilter = THREE.LinearMipmapLinearFilter;
+            bakedTexture.magFilter = THREE.LinearFilter;
+            bakedTexture.generateMipmaps = true;
+            bakedTexture.anisotropy = 4;
+            
             // Store the baked texture
             bakedTextureRef.current = bakedTexture;
             
-            // 9. Create a new material with the baked texture
+            // Create a new material with the baked texture
             const bakedMaterial = new THREE.MeshStandardMaterial({
                 map: bakedTexture,
-                roughness: originalMat.roughness || 0.7,
-                metalness: originalMat.metalness || 0.1,
-                transparent: true
+                roughness: (originalMat && originalMat.roughness) || 0.7,
+                metalness: (originalMat && originalMat.metalness) || 0.1,
+                color: 0xFFFFFF // Ensure white base color
             });
             
-            // Remove the projection overlay
-            handleRevertToOriginal();
+            // Show debug image of the baked texture
+            console.log("Baked texture created with dimensions:", textureSize, "×", textureSize);
+            
+            // Remove all projection overlays
+            projectionOverlaysRef.current.forEach((overlay, i) => {
+                if (overlay && meshRef.current) {
+                    meshRef.current.remove(overlay);
+                }
+            });
             
             // Apply the baked material
             meshRef.current.material = bakedMaterial;
             
-            // 10. Clean up
+            // Clean up
             renderTarget.dispose();
-            geometry.dispose();
+            bakingGeometry.dispose();
             bakingMaterial.dispose();
             
-            setStatus('Texture baked with original texture blended! Ready for export.');
+            setStatus(`All ${validProjectionIndices.length} projections baked into a single texture! Ready for export.`);
             setIsBaked(true);
             
         } catch (error) {
-            console.error('Error baking texture:', error);
-            setStatus(`Failed to bake texture: ${error.message}`);
+            console.error('Error baking projections:', error);
+            setStatus(`Failed to bake projections: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
-    }, [isProjected, textureSize, handleRevertToOriginal, uploadedTexture]);
+    }, [projections, textureSize, dilatePixels]);
 
-    // === Function to export the model with baked texture ===
+    // === Export Model with Baked Texture ===
     const handleExportModel = useCallback(() => {
         if (!meshRef.current || !bakedTextureRef.current || !isBaked) {
             setStatus('Cannot export: No baked texture available.');
             return;
         }
-        
+
         try {
             setIsLoading(true);
             setStatus('Exporting model...');
-            
+
             // Ensure the texture is set correctly
             console.log('Material before export:', meshRef.current.material);
-            
+
             // Force a material update to ensure texture is applied
             if (meshRef.current.material) {
                 meshRef.current.material.needsUpdate = true;
-                
+
                 // Ensure the texture is properly attached
                 if (bakedTextureRef.current) {
                     meshRef.current.material.map = bakedTextureRef.current;
                     meshRef.current.material.map.needsUpdate = true;
                 }
             }
-            
+
             // Create a scene for export with the mesh
             const exportScene = new THREE.Scene();
-            
-            // Clone the current mesh - IMPORTANT: use deep clone
+
+            // Clone the current mesh
             const exportMesh = meshRef.current.clone();
-            
-            // CRITICAL: Create a separate material instance for export
+
+            // Create a separate material instance for export
             exportMesh.material = new THREE.MeshStandardMaterial({
                 map: bakedTextureRef.current,
                 roughness: 0.8,
                 metalness: 0.1
             });
-            
-            // Make sure the texture is applied
+
+            // CHANGE: Add proper filtering to exported texture
+            exportMesh.material.map.minFilter = THREE.LinearMipmapLinearFilter;
+            exportMesh.material.map.magFilter = THREE.LinearFilter;
+            exportMesh.material.map.generateMipmaps = true;
+            exportMesh.material.map.anisotropy = 4;
             exportMesh.material.map.needsUpdate = true;
             exportMesh.material.needsUpdate = true;
-            
+
             // Add to the export scene
             exportScene.add(exportMesh);
-            
-            console.log('Export mesh:', exportMesh);
-            console.log('Export material:', exportMesh.material);
-            console.log('Export texture:', exportMesh.material.map);
-            
+
             // Export options
             const options = {
                 binary: true,
                 embedImages: true,
                 includeCustomExtensions: true,
-                forceIndices: true,        // Force indexed geometry
-                forcePowerOfTwoTextures: false  // Allow non-power-of-two textures
+                forceIndices: true,
+                forcePowerOfTwoTextures: false
             };
-            
+
             // Do the export
             const exporter = new GLTFExporter();
             exporter.parse(
@@ -1011,13 +1393,13 @@ function ProjectedMaterialModelDemo() {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = 'model_with_baked_texture.glb';
+                    link.download = 'model_with_baked_textures.glb';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    
-                    setStatus('Model exported successfully with baked texture!');
+
+                    setStatus('Model exported successfully with baked textures!');
                     setIsLoading(false);
                 },
                 (error) => {
@@ -1027,7 +1409,7 @@ function ProjectedMaterialModelDemo() {
                 },
                 options
             );
-            
+
         } catch (error) {
             console.error('Error in export process:', error);
             setStatus(`Export process failed: ${error.message}`);
@@ -1039,79 +1421,190 @@ function ProjectedMaterialModelDemo() {
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-gray-800 font-sans text-gray-200">
             {/* Controls UI Panel */}
-            <div className="absolute left-3 top-3 z-10 flex w-64 flex-col gap-4 rounded-lg bg-black/70 p-4 shadow-lg">
-                <h2 className="mb-2 text-center text-lg font-bold">Texture Projection Workflow</h2>
-                
+            <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-4 rounded-lg bg-black/70 p-4 shadow-lg">
+                <h2 className="mb-2 text-center text-lg font-bold">Multi-Projection Texturing</h2>
+
                 {/* Step 1: Load GLB */}
                 <div>
                     <label htmlFor="glbInput" className="mb-1 block text-sm font-medium text-gray-300">(1) Load GLB Model:</label>
-                    <input type="file" id="glbInput" accept=".glb,.gltf" onChange={handleGlbLoad} disabled={isLoading} className="block w-full cursor-pointer rounded-md border border-gray-600 bg-gray-700 text-sm text-gray-300 file:mr-4 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white file:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"/>
+                    <input type="file" id="glbInput" accept=".glb,.gltf" onChange={handleGlbLoad} disabled={isLoading} className="block w-full cursor-pointer rounded-md border border-gray-600 bg-gray-700 text-sm text-gray-300 file:mr-4 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white file:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50" />
                 </div>
-                
+
                 {/* Step 2: Unwrap UVs */}
-                <button 
-                    onClick={handleUnwrapUVs} 
-                    disabled={!modelReady || isLoading || !unwrapReady || uvUnwrapped} 
+                <button
+                    onClick={handleUnwrapUVs}
+                    disabled={!modelReady || isLoading || !unwrapReady || uvUnwrapped}
                     className={`mt-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 ${uvUnwrapped ? 'bg-gray-500' : 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70`}
                 >
                     {uvUnwrapped ? '✔ UVs Unwrapped' : '(2) Unwrap UV Coordinates'}
                 </button>
 
-                {/* Step 3: Take Snapshot */}
-                <button 
-                    onClick={handleTakeSnapshot} 
-                    disabled={!modelReady || isLoading || !uvUnwrapped} 
-                    className={`mt-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 ${snapshotTaken ? 'bg-gray-500' : 'bg-cyan-600 hover:bg-cyan-700 focus:ring-cyan-500'} disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70`}
-                >
-                    {snapshotTaken ? '✔ Snapshot Taken (Upload Image)' : '(3) Take Snapshot & Download'}
-                </button>
+                {uvUnwrapped && (
+                    <>
+                        {/* Projections section */}
+                        <div className="mt-4 space-y-2 border-t border-gray-600 pt-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold uppercase text-gray-300">Projections</h3>
+                                <button
+                                    onClick={handleAddProjection}
+                                    disabled={isLoading || isBaked}
+                                    className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50"
+                                >
+                                    + Add New
+                                </button>
+                            </div>
 
-                {/* Step 4: Upload Texture */}
-                <div>
-                    <label htmlFor="textureInput" className={`mb-1 block text-sm font-medium ${snapshotTaken ? 'text-gray-300' : 'text-gray-500'}`}>(4) Upload Projection Image:</label>
-                    <input 
-                        type="file" 
-                        id="textureInput" 
-                        accept="image/*" 
-                        onChange={handleTextureUpload} 
-                        disabled={!snapshotTaken || isLoading || isProjected} 
-                        className="block w-full cursor-pointer rounded-md border border-gray-600 bg-gray-700 text-sm text-gray-300 file:mr-4 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white file:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                </div>
+                            {/* Projection list */}
+                            <div className="max-h-40 overflow-y-auto rounded-md border border-gray-700 bg-gray-900">
+                                {projections.length === 0 ? (
+                                    <div className="p-3 text-center text-sm text-gray-400">
+                                        No projections yet. Click "Add New" to create one.
+                                    </div>
+                                ) : (
+                                    <ul className="divide-y divide-gray-700">
+                                        {projections.map((proj, index) => (
+                                            <li
+                                                key={proj.id}
+                                                className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-gray-800 ${index === activeProjectionIndex ? 'bg-blue-900/40' : ''}`}
+                                                onClick={() => handleSelectProjection(index)}
+                                            >
+                                                <div className="flex flex-1 items-center">
+                                                    <span className="mr-2 font-medium">{proj.name}</span>
+                                                    {proj.isApplied && <span className="text-xs text-green-400">✓</span>}
+                                                </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteProjection(index); }}
+                                                    className="ml-2 rounded-full p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+                                                    title="Delete projection"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
 
-                {/* Step 5: Project Button */}
-                <button 
-                    onClick={handleProject} 
-                    disabled={!snapshotTaken || !textureReady || isLoading || isProjected} 
-                    className="mt-2 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70"
-                >
-                    {isProjected ? '✔ Projection Applied' : '(5) Project Uploaded Image'}
-                </button>
-                
-                {/* Step 6: Bake Texture */}
-                <button 
-                    onClick={handleBakeTexture} 
-                    disabled={!isProjected || isLoading || isBaked} 
-                    className={`mt-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 ${isBaked ? 'bg-gray-500' : 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500'} disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70`}
-                >
-                    {isBaked ? '✔ Texture Baked' : '(6) Bake Projection to Texture'}
-                </button>
-                
-                {/* Step 7: Export Model */}
-                <button 
-                    onClick={handleExportModel} 
-                    disabled={!isBaked || isLoading} 
-                    className="mt-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70"
-                >
-                    (7) Export Model with Baked Texture
-                </button>
-                
+                        {/* Active projection controls */}
+                        {activeProjectionIndex !== -1 && (
+                            <div className="rounded-md border border-gray-600 bg-gray-900/60 p-3">
+                                <h4 className="mb-2 text-sm font-medium text-blue-400">
+                                    {projections[activeProjectionIndex]?.name || `Projection ${activeProjectionIndex + 1}`}
+                                </h4>
+
+                                {/* Snapshot button */}
+                                <button
+                                    onClick={handleTakeSnapshot}
+                                    disabled={isLoading || isBaked}
+                                    className={`mb-2 w-full rounded-md px-3 py-1.5 text-sm font-medium text-white ${projections[activeProjectionIndex]?.snapshotTaken
+                                            ? 'bg-gray-600'
+                                            : 'bg-cyan-600 hover:bg-cyan-700'
+                                        } disabled:opacity-50`}
+                                >
+                                    {projections[activeProjectionIndex]?.snapshotTaken
+                                        ? '✔ Snapshot Taken'
+                                        : '(3) Take Snapshot & Download'}
+                                </button>
+
+                                {/* Texture upload */}
+                                <div className="mb-2">
+                                    <label htmlFor="textureInput" className="mb-1 block text-xs font-medium text-gray-300">
+                                        (4) Upload Projection Image:
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id="textureInput"
+                                        accept="image/*"
+                                        onChange={handleTextureUpload}
+                                        disabled={!projections[activeProjectionIndex]?.snapshotTaken || isLoading || isBaked}
+                                        className="block w-full cursor-pointer rounded-md border border-gray-700 bg-gray-800 text-xs text-gray-300 file:mr-2 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-1 file:text-xs file:text-white file:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                </div>
+
+                                {/* Apply projection button */}
+                                <button
+                                    onClick={handleApplyProjection}
+                                    disabled={
+                                        !projections[activeProjectionIndex]?.textureLoaded ||
+                                        isLoading ||
+                                        isBaked
+                                    }
+                                    className={`mb-2 w-full rounded-md px-3 py-1.5 text-sm font-medium text-white ${projections[activeProjectionIndex]?.isApplied
+                                            ? 'bg-gray-600'
+                                            : 'bg-green-600 hover:bg-green-700'
+                                        } disabled:opacity-50`}
+                                >
+                                    {projections[activeProjectionIndex]?.isApplied
+                                        ? '✔ Projection Applied'
+                                        : '(5) Apply Projection'}
+                                </button>
+
+                                {/* Opacity control - only shown when projection is applied */}
+                                {projections[activeProjectionIndex]?.isApplied && !isBaked && (
+                                    <div className="mb-2">
+                                        <label htmlFor="opacitySlider" className="mb-1 block text-xs text-gray-400">Opacity:</label>
+                                        <input
+                                            type="range"
+                                            id="opacitySlider"
+                                            min="0.1"
+                                            max="1"
+                                            step="0.05"
+                                            value={projections[activeProjectionIndex]?.opacity || 1}
+                                            onChange={(e) => handleAdjustProjectionOpacity(parseFloat(e.target.value))}
+                                            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Visibility toggle - only shown when projection is applied */}
+                                {projections[activeProjectionIndex]?.isApplied && !isBaked && (
+                                    <button
+                                        onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
+                                        className="w-full rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                                    >
+                                        {projections[activeProjectionIndex]?.visible === false
+                                            ? 'Show Projection'
+                                            : 'Hide Projection'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Bake and Export buttons */}
+                        {projections.some(p => p.isApplied) && (
+                            <div className="mt-2 space-y-2 border-t border-gray-600 pt-3">
+                                <button
+                                    onClick={handleBakeAllProjections}
+                                    disabled={isLoading || isBaked}
+                                    className={`w-full rounded-md px-4 py-2 text-sm font-semibold text-white ${isBaked
+                                            ? 'bg-gray-600'
+                                            : 'bg-amber-600 hover:bg-amber-700'
+                                        } disabled:opacity-50`}
+                                >
+                                    {isBaked
+                                        ? '✔ Textures Baked'
+                                        : '(6) Bake All Projections to Texture'}
+                                </button>
+
+                                <button
+                                    onClick={handleExportModel}
+                                    disabled={!isBaked || isLoading}
+                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:opacity-50"
+                                >
+                                    (7) Export Model with Baked Texture
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
+
                 {/* Texture Size Controls */}
                 <div className="mt-4 space-y-2 border-t border-gray-600 pt-3">
                     <label htmlFor="textureSizeSelect" className="block text-sm font-medium text-gray-300">Texture Resolution:</label>
-                    <select 
-                        id="textureSizeSelect" 
-                        value={textureSize} 
+                    <select
+                        id="textureSizeSelect"
+                        value={textureSize}
                         onChange={(e) => setTextureSize(Number(e.target.value))}
                         disabled={isLoading || isBaked}
                         className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 py-2 pl-3 pr-10 text-base text-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1122,36 +1615,6 @@ function ProjectedMaterialModelDemo() {
                         <option value={4096}>4096 x 4096</option>
                     </select>
                 </div>
-                
-                {/* Projection Controls - Only shown when projection is active */}
-                {isProjected && !isBaked && (
-                    <div className="mt-2 space-y-3 rounded-md border border-gray-600 bg-gray-800/50 p-3">
-                        <h3 className="text-xs font-semibold uppercase text-gray-400">Projection Controls</h3>
-                        
-                        {/* Opacity Slider */}
-                        <div>
-                            <label htmlFor="opacitySlider" className="mb-1 block text-xs text-gray-400">Opacity:</label>
-                            <input 
-                                type="range" 
-                                id="opacitySlider" 
-                                min="0.1" 
-                                max="1" 
-                                step="0.05" 
-                                defaultValue="0.9"
-                                onChange={(e) => handleAdjustProjectionOpacity(parseFloat(e.target.value))}
-                                className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700"
-                            />
-                        </div>
-                        
-                        {/* Remove Projection Button */}
-                        <button 
-                            onClick={handleRevertToOriginal} 
-                            className="w-full rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                        >
-                            Remove Projection
-                        </button>
-                    </div>
-                )}
 
                 {/* Status & Guidance */}
                 <div className="mt-3 space-y-1 border-t border-gray-600 pt-3">
