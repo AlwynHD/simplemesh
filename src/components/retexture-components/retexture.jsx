@@ -7,6 +7,21 @@ import ProjectedMaterial, { allocateProjectionData } from 'three-projected-mater
 import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+// UI Components - Import the same components used in Image3D
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+// Icons
+import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash, Coins } from 'lucide-react'
+
 function ProjectedMaterialModelDemo() {
     const mountRef = useRef(null);
 
@@ -1417,214 +1432,291 @@ function ProjectedMaterialModelDemo() {
         }
     }, [isBaked]);
 
-    // === JSX Rendering ===
+    // === JSX Rendering with Sidebar ===
     return (
-        <div className="relative h-screen w-screen overflow-hidden bg-gray-800 font-sans text-gray-200">
-            {/* Controls UI Panel */}
-            <div className="absolute left-3 top-3 z-10 flex w-72 flex-col gap-4 rounded-lg bg-black/70 p-4 shadow-lg">
-                <h2 className="mb-2 text-center text-lg font-bold">Multi-Projection Texturing</h2>
+        <div className="flex h-full relative">
+            {/* Sidebar - Using the same structure as Image3D */}
+            <Sidebar className="border-r border-border w-80" variant="inset" collapsible="none">
+                <SidebarContent>
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="text-xl font-semibold text-primary px-4 py-3">
+                            Re-Texture 3D Model
+                        </SidebarGroupLabel>
+                        <hr className="border-border" />
 
-                {/* Step 1: Load GLB */}
-                <div>
-                    <label htmlFor="glbInput" className="mb-1 block text-sm font-medium text-gray-300">(1) Load GLB Model:</label>
-                    <input type="file" id="glbInput" accept=".glb,.gltf" onChange={handleGlbLoad} disabled={isLoading} className="block w-full cursor-pointer rounded-md border border-gray-600 bg-gray-700 text-sm text-gray-300 file:mr-4 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white file:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50" />
-                </div>
-
-                {/* Step 2: Unwrap UVs */}
-                <button
-                    onClick={handleUnwrapUVs}
-                    disabled={!modelReady || isLoading || !unwrapReady || uvUnwrapped}
-                    className={`mt-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 ${uvUnwrapped ? 'bg-gray-500' : 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'} disabled:cursor-not-allowed disabled:bg-gray-500 disabled:opacity-70`}
-                >
-                    {uvUnwrapped ? '✔ UVs Unwrapped' : '(2) Unwrap UV Coordinates'}
-                </button>
-
-                {uvUnwrapped && (
-                    <>
-                        {/* Projections section */}
-                        <div className="mt-4 space-y-2 border-t border-gray-600 pt-3">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-semibold uppercase text-gray-300">Projections</h3>
-                                <button
-                                    onClick={handleAddProjection}
-                                    disabled={isLoading || isBaked}
-                                    className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50"
-                                >
-                                    + Add New
-                                </button>
+                        <SidebarGroupContent className="p-4 space-y-4">
+                            {/* Step 1: Load GLB */}
+                            <div className="space-y-2">
+                                <Label htmlFor="glbInput" className="text-sm font-medium flex items-center gap-1.5">
+                                    <UploadCloud className="h-4 w-4" />
+                                    (1) Load GLB Model
+                                </Label>
+                                <Input 
+                                    type="file" 
+                                    id="glbInput" 
+                                    accept=".glb,.gltf" 
+                                    onChange={handleGlbLoad} 
+                                    disabled={isLoading} 
+                                    className="cursor-pointer"
+                                />
                             </div>
 
-                            {/* Projection list */}
-                            <div className="max-h-40 overflow-y-auto rounded-md border border-gray-700 bg-gray-900">
-                                {projections.length === 0 ? (
-                                    <div className="p-3 text-center text-sm text-gray-400">
-                                        No projections yet. Click "Add New" to create one.
-                                    </div>
+                            {/* Step 2: Unwrap UVs */}
+                            <Button
+                                onClick={handleUnwrapUVs}
+                                disabled={!modelReady || isLoading || !unwrapReady || uvUnwrapped}
+                                className="w-full"
+                                variant={uvUnwrapped ? "outline" : "default"}
+                            >
+                                {uvUnwrapped ? (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        UVs Unwrapped
+                                    </>
                                 ) : (
-                                    <ul className="divide-y divide-gray-700">
-                                        {projections.map((proj, index) => (
-                                            <li
-                                                key={proj.id}
-                                                className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-gray-800 ${index === activeProjectionIndex ? 'bg-blue-900/40' : ''}`}
-                                                onClick={() => handleSelectProjection(index)}
-                                            >
-                                                <div className="flex flex-1 items-center">
-                                                    <span className="mr-2 font-medium">{proj.name}</span>
-                                                    {proj.isApplied && <span className="text-xs text-green-400">✓</span>}
-                                                </div>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteProjection(index); }}
-                                                    className="ml-2 rounded-full p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
-                                                    title="Delete projection"
-                                                >
-                                                    ✕
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <>
+                                        <Hash className="h-4 w-4 mr-2" />
+                                        (2) Unwrap UV Coordinates
+                                    </>
                                 )}
-                            </div>
-                        </div>
+                            </Button>
 
-                        {/* Active projection controls */}
-                        {activeProjectionIndex !== -1 && (
-                            <div className="rounded-md border border-gray-600 bg-gray-900/60 p-3">
-                                <h4 className="mb-2 text-sm font-medium text-blue-400">
-                                    {projections[activeProjectionIndex]?.name || `Projection ${activeProjectionIndex + 1}`}
-                                </h4>
+                            {uvUnwrapped && (
+                                <>
+                                    {/* Projections Section */}
+                                    <div className="space-y-2 border-t border-border pt-4 mt-4">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-medium">Projections</Label>
+                                            <Button
+                                                onClick={handleAddProjection}
+                                                disabled={isLoading || isBaked}
+                                                size="sm"
+                                                variant="outline"
+                                            >
+                                                + Add New
+                                            </Button>
+                                        </div>
 
-                                {/* Snapshot button */}
-                                <button
-                                    onClick={handleTakeSnapshot}
+                                        {/* Projection List */}
+                                        <div className="max-h-40 overflow-y-auto rounded-md border border-border">
+                                            {projections.length === 0 ? (
+                                                <div className="p-3 text-center text-sm text-muted-foreground">
+                                                    No projections yet. Click "Add New" to create one.
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y divide-border">
+                                                    {projections.map((proj, index) => (
+                                                        <div
+                                                            key={proj.id}
+                                                            className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 ${index === activeProjectionIndex ? 'bg-primary/10' : ''}`}
+                                                            onClick={() => handleSelectProjection(index)}
+                                                        >
+                                                            <div className="flex flex-1 items-center">
+                                                                <span className="mr-2 font-medium">{proj.name}</span>
+                                                                {proj.isApplied && (
+                                                                    <span className="text-xs text-green-500">✓</span>
+                                                                )}
+                                                            </div>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-6 w-6"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteProjection(index);
+                                                                }}
+                                                                title="Delete projection"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Active Projection Controls */}
+                                    {activeProjectionIndex !== -1 && (
+                                        <div className="space-y-3 border border-border rounded-md p-3 bg-muted/30">
+                                            <div className="text-sm font-medium text-primary">
+                                                {projections[activeProjectionIndex]?.name || `Projection ${activeProjectionIndex + 1}`}
+                                            </div>
+
+                                            {/* Snapshot Button */}
+                                            <Button
+                                                onClick={handleTakeSnapshot}
+                                                disabled={isLoading || isBaked}
+                                                className="w-full"
+                                                variant={projections[activeProjectionIndex]?.snapshotTaken ? "outline" : "default"}
+                                            >
+                                                {projections[activeProjectionIndex]?.snapshotTaken ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Snapshot Taken
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Image className="h-4 w-4 mr-2" />
+                                                        (3) Take Snapshot
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            {/* Texture Upload */}
+                                            <div className="space-y-2">
+                                                <Label htmlFor="textureInput" className="text-xs font-medium">
+                                                    (4) Upload Projection Image:
+                                                </Label>
+                                                <Input
+                                                    type="file"
+                                                    id="textureInput"
+                                                    accept="image/*"
+                                                    onChange={handleTextureUpload}
+                                                    disabled={!projections[activeProjectionIndex]?.snapshotTaken || isLoading || isBaked}
+                                                    className="text-xs"
+                                                />
+                                            </div>
+
+                                            {/* Apply Projection Button */}
+                                            <Button
+                                                onClick={handleApplyProjection}
+                                                disabled={!projections[activeProjectionIndex]?.textureLoaded || isLoading || isBaked}
+                                                className="w-full"
+                                                variant={projections[activeProjectionIndex]?.isApplied ? "outline" : "default"}
+                                            >
+                                                {projections[activeProjectionIndex]?.isApplied ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Projection Applied
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Wand2 className="h-4 w-4 mr-2" />
+                                                        (5) Apply Projection
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            {/* Opacity Control */}
+                                            {projections[activeProjectionIndex]?.isApplied && !isBaked && (
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="opacitySlider" className="text-xs">Opacity:</Label>
+                                                    <input
+                                                        type="range"
+                                                        id="opacitySlider"
+                                                        min="0.1"
+                                                        max="1"
+                                                        step="0.05"
+                                                        value={projections[activeProjectionIndex]?.opacity || 1}
+                                                        onChange={(e) => handleAdjustProjectionOpacity(parseFloat(e.target.value))}
+                                                        className="w-full"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Visibility Toggle */}
+                                            {projections[activeProjectionIndex]?.isApplied && !isBaked && (
+                                                <Button
+                                                    onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
+                                                    className="w-full"
+                                                    variant="outline"
+                                                >
+                                                    {projections[activeProjectionIndex]?.visible === false
+                                                        ? 'Show Projection'
+                                                        : 'Hide Projection'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Bake and Export Buttons */}
+                                    {projections.some(p => p.isApplied) && (
+                                        <div className="space-y-2 border-t border-border pt-4 mt-4">
+                                            <Button
+                                                onClick={handleBakeAllProjections}
+                                                disabled={isLoading || isBaked}
+                                                className="w-full"
+                                                variant={isBaked ? "outline" : "default"}
+                                            >
+                                                {isBaked ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Textures Baked
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Wand2 className="h-4 w-4 mr-2" />
+                                                        (6) Bake All Projections
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                onClick={handleExportModel}
+                                                disabled={!isBaked || isLoading}
+                                                className="w-full"
+                                                variant="secondary"
+                                            >
+                                                <UploadCloud className="h-4 w-4 mr-2" />
+                                                (7) Export Model
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Texture Size Controls */}
+                            <div className="border-t border-border pt-4 mt-4 space-y-2">
+                                <Label htmlFor="textureSizeSelect" className="text-sm font-medium">Texture Resolution:</Label>
+                                <select
+                                    id="textureSizeSelect"
+                                    value={textureSize}
+                                    onChange={(e) => setTextureSize(Number(e.target.value))}
                                     disabled={isLoading || isBaked}
-                                    className={`mb-2 w-full rounded-md px-3 py-1.5 text-sm font-medium text-white ${projections[activeProjectionIndex]?.snapshotTaken
-                                            ? 'bg-gray-600'
-                                            : 'bg-cyan-600 hover:bg-cyan-700'
-                                        } disabled:opacity-50`}
+                                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                                 >
-                                    {projections[activeProjectionIndex]?.snapshotTaken
-                                        ? '✔ Snapshot Taken'
-                                        : '(3) Take Snapshot & Download'}
-                                </button>
+                                    <option value={512}>512 x 512</option>
+                                    <option value={1024}>1024 x 1024</option>
+                                    <option value={2048}>2048 x 2048</option>
+                                    <option value={4096}>4096 x 4096</option>
+                                </select>
+                            </div>
 
-                                {/* Texture upload */}
-                                <div className="mb-2">
-                                    <label htmlFor="textureInput" className="mb-1 block text-xs font-medium text-gray-300">
-                                        (4) Upload Projection Image:
-                                    </label>
-                                    <input
-                                        type="file"
-                                        id="textureInput"
-                                        accept="image/*"
-                                        onChange={handleTextureUpload}
-                                        disabled={!projections[activeProjectionIndex]?.snapshotTaken || isLoading || isBaked}
-                                        className="block w-full cursor-pointer rounded-md border border-gray-700 bg-gray-800 text-xs text-gray-300 file:mr-2 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-1 file:text-xs file:text-white file:hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                    />
-                                </div>
-
-                                {/* Apply projection button */}
-                                <button
-                                    onClick={handleApplyProjection}
-                                    disabled={
-                                        !projections[activeProjectionIndex]?.textureLoaded ||
-                                        isLoading ||
-                                        isBaked
-                                    }
-                                    className={`mb-2 w-full rounded-md px-3 py-1.5 text-sm font-medium text-white ${projections[activeProjectionIndex]?.isApplied
-                                            ? 'bg-gray-600'
-                                            : 'bg-green-600 hover:bg-green-700'
-                                        } disabled:opacity-50`}
-                                >
-                                    {projections[activeProjectionIndex]?.isApplied
-                                        ? '✔ Projection Applied'
-                                        : '(5) Apply Projection'}
-                                </button>
-
-                                {/* Opacity control - only shown when projection is applied */}
-                                {projections[activeProjectionIndex]?.isApplied && !isBaked && (
-                                    <div className="mb-2">
-                                        <label htmlFor="opacitySlider" className="mb-1 block text-xs text-gray-400">Opacity:</label>
-                                        <input
-                                            type="range"
-                                            id="opacitySlider"
-                                            min="0.1"
-                                            max="1"
-                                            step="0.05"
-                                            value={projections[activeProjectionIndex]?.opacity || 1}
-                                            onChange={(e) => handleAdjustProjectionOpacity(parseFloat(e.target.value))}
-                                            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-700"
-                                        />
+                            {/* Status & Guidance */}
+                            <div className="border-t border-border pt-4 mt-4">
+                                <div className="text-sm text-muted-foreground italic">{status}</div>
+                                {isLoading && (
+                                    <div className="flex items-center gap-2 text-primary mt-2">
+                                        <Loader className="h-4 w-4 animate-spin" />
+                                        <span className="font-medium">Processing...</span>
                                     </div>
                                 )}
-
-                                {/* Visibility toggle - only shown when projection is applied */}
-                                {projections[activeProjectionIndex]?.isApplied && !isBaked && (
-                                    <button
-                                        onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
-                                        className="w-full rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
-                                    >
-                                        {projections[activeProjectionIndex]?.visible === false
-                                            ? 'Show Projection'
-                                            : 'Hide Projection'}
-                                    </button>
-                                )}
                             </div>
-                        )}
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                </SidebarContent>
+            </Sidebar>
 
-                        {/* Bake and Export buttons */}
-                        {projections.some(p => p.isApplied) && (
-                            <div className="mt-2 space-y-2 border-t border-gray-600 pt-3">
-                                <button
-                                    onClick={handleBakeAllProjections}
-                                    disabled={isLoading || isBaked}
-                                    className={`w-full rounded-md px-4 py-2 text-sm font-semibold text-white ${isBaked
-                                            ? 'bg-gray-600'
-                                            : 'bg-amber-600 hover:bg-amber-700'
-                                        } disabled:opacity-50`}
-                                >
-                                    {isBaked
-                                        ? '✔ Textures Baked'
-                                        : '(6) Bake All Projections to Texture'}
-                                </button>
-
-                                <button
-                                    onClick={handleExportModel}
-                                    disabled={!isBaked || isLoading}
-                                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:opacity-50"
-                                >
-                                    (7) Export Model with Baked Texture
-                                </button>
+            {/* Main Content Area */}
+            <main className="flex-1 bg-muted/30 overflow-hidden relative">
+                {/* Canvas Container */}
+                <div ref={mountRef} className="absolute inset-0 h-full w-full" />
+                
+                {/* Loading Overlay */}
+                {isLoading && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="bg-card/40 p-8 rounded-xl shadow-lg text-center max-w-sm mx-auto border border-border">
+                            <div className="relative">
+                                <div className="size-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+                                <Loader className="h-8 w-8 absolute inset-0 m-auto text-primary" />
                             </div>
-                        )}
-                    </>
+                            <h3 className="text-xl font-semibold mt-6 mb-2">Processing</h3>
+                            <p className="text-muted-foreground">{status}</p>
+                        </div>
+                    </div>
                 )}
-
-                {/* Texture Size Controls */}
-                <div className="mt-4 space-y-2 border-t border-gray-600 pt-3">
-                    <label htmlFor="textureSizeSelect" className="block text-sm font-medium text-gray-300">Texture Resolution:</label>
-                    <select
-                        id="textureSizeSelect"
-                        value={textureSize}
-                        onChange={(e) => setTextureSize(Number(e.target.value))}
-                        disabled={isLoading || isBaked}
-                        className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 py-2 pl-3 pr-10 text-base text-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <option value={512}>512 x 512</option>
-                        <option value={1024}>1024 x 1024</option>
-                        <option value={2048}>2048 x 2048</option>
-                        <option value={4096}>4096 x 4096</option>
-                    </select>
-                </div>
-
-                {/* Status & Guidance */}
-                <div className="mt-3 space-y-1 border-t border-gray-600 pt-3">
-                    <div className="italic text-sm text-gray-400">{status}</div>
-                    {isLoading && <div className="font-semibold text-yellow-400">Loading...</div>}
-                </div>
-            </div>
-
-            {/* Canvas Container */}
-            <div ref={mountRef} className="absolute inset-0 h-full w-full" />
+            </main>
         </div>
     );
 }
