@@ -6,8 +6,9 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import ProjectedMaterial, { allocateProjectionData } from 'three-projected-material';
 import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { imageUpscaler } from '@/components/retexture-components/retextureActions';
 
-// UI Components - Import the same components used in Image3D
+// UI Components
 import {
   Sidebar,
   SidebarContent,
@@ -18,9 +19,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Icons
-import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash, Coins } from 'lucide-react'
+import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash, Coins, Sparkles, Sliders } from 'lucide-react'
 
 function ProjectedMaterialModelDemo() {
     const mountRef = useRef(null);
@@ -34,13 +38,13 @@ function ProjectedMaterialModelDemo() {
     const originalMaterialRef = useRef(); // Holds the original material from GLB
     const requestRef = useRef();
 
-    // New refs for managing multiple projections
+    // Refs for managing multiple projections
     const projectionOverlaysRef = useRef([]); // Array to hold all projection overlays
     const projectedMaterialsRef = useRef([]); // Array to hold all projected materials
     const snapshotCameraStatesRef = useRef([]); // Array to hold camera states for all projections
     const uploadedTexturesRef = useRef([]); // Array to hold all uploaded textures
 
-    // New refs for UV unwrapping and baking
+    // Refs for UV unwrapping and baking
     const unwrapperRef = useRef(null);
     const rtSceneRef = useRef(new THREE.Scene()); // Render-to-texture scene
     const rtCameraRef = useRef(); // Render-to-texture camera
@@ -48,19 +52,38 @@ function ProjectedMaterialModelDemo() {
     const bakedTextureRef = useRef(); // The baked texture
 
     // --- State ---
-    const [isLoading, setIsLoading] = useState(false); // General loading state
+    const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('Load a GLB Model to start.');
     const [loadedGeometry, setLoadedGeometry] = useState(null);
-    const [originalMaterial, setOriginalMaterial] = useState(null); // State for original material
-    const [modelReady, setModelReady] = useState(false); // GLB loaded?
+    const [originalMaterial, setOriginalMaterial] = useState(null);
+    const [modelReady, setModelReady] = useState(false);
     const [uvUnwrapped, setUvUnwrapped] = useState(false);
-    const [textureSize, setTextureSize] = useState(2048); // CHANGE: Default to 2048 resolution
+    const [textureSize, setTextureSize] = useState(2048);
     const [isBaked, setIsBaked] = useState(false);
 
-    // New state for managing multiple projections
-    const [projections, setProjections] = useState([]); // Array of projection data objects
-    const [activeProjectionIndex, setActiveProjectionIndex] = useState(-1); // Currently selected projection (-1 means none)
+    // State for managing projections
+    const [projections, setProjections] = useState([]);
+    const [activeProjectionIndex, setActiveProjectionIndex] = useState(-1);
     const [unwrapReady, setUnwrapReady] = useState(false);
+
+    // New state for AI generation parameters
+    const [generationParams, setGenerationParams] = useState({
+        prompt: "masterpiece, best quality, realistic texture, highly detailed",
+        negative_prompt: "(worst quality, low quality, normal quality:2) JuggernautNegative-neg",
+        seed: Math.floor(Math.random() * 1000000),
+        resemblance: 0.6,
+        sharpen: 0,
+        creativity: 0.35,
+        num_inference_steps: 18
+    });
+    
+    // Function to update generation parameters
+    const updateParams = (param, value) => {
+        setGenerationParams(prev => ({
+            ...prev,
+            [param]: value
+        }));
+    };
 
     // === Initialize xatlas unwrapper ===
     useEffect(() => {
@@ -95,7 +118,7 @@ function ProjectedMaterialModelDemo() {
                     bruteForce: false,
                     createImage: false,
                     maxChartSize: 0,
-                    padding: 8, // CHANGE: Increased padding between UV islands to prevent seams
+                    padding: 8, // Increased padding between UV islands to prevent seams
                     resolution: textureSize,
                     rotateCharts: true,
                     rotateChartsToAxis: true,
@@ -159,7 +182,7 @@ function ProjectedMaterialModelDemo() {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // --- Reset ALL relevant states ---
+        // Reset ALL relevant states
         setModelReady(false);
         setUvUnwrapped(false);
         setIsBaked(false);
@@ -235,7 +258,7 @@ function ProjectedMaterialModelDemo() {
                         console.log("Original material stored:", foundMaterial);
                     }
 
-                    setStatus('Model loaded with original textures. First unwrap UVs before taking snapshot.');
+                    setStatus('Model loaded with original textures. First unwrap UVs before adding projections.');
                     setModelReady(true);
                 } else {
                     setStatus('Error: No mesh found in GLB.');
@@ -467,7 +490,7 @@ function ProjectedMaterialModelDemo() {
                 }
 
                 console.log('UVs unwrapped successfully!');
-                setStatus('UVs unwrapped successfully! Now ready to add projections.');
+                setStatus('UVs unwrapped successfully! Now ready to add AI-powered projections.');
                 setUvUnwrapped(true);
             } else {
                 throw new Error('Unwrapping did not return valid geometry');
@@ -481,73 +504,27 @@ function ProjectedMaterialModelDemo() {
         }
     }, [unwrapReady]);
 
-    // === Add New Projection ===
-    const handleAddProjection = useCallback(() => {
-        if (!uvUnwrapped || !modelReady) {
-            setStatus('Please unwrap UVs before adding projections.');
-            return;
-        }
-
-        // Create a new projection entry
-        const newProjectionIndex = projections.length;
-        const newProjection = {
-            id: Date.now(),
-            name: `Projection ${newProjectionIndex + 1}`,
-            snapshotTaken: false,
-            textureLoaded: false,
-            isApplied: false,
-            opacity: 1.0
-        };
-
-        setProjections(prev => [...prev, newProjection]);
-        setActiveProjectionIndex(newProjectionIndex);
-        setStatus(`Added new projection #${newProjectionIndex + 1}. Position your camera and take a snapshot.`);
-    }, [projections, uvUnwrapped, modelReady]);
-
-    // === Take Snapshot for Current Projection ===
-    const handleTakeSnapshot = useCallback(() => {
-        if (!modelReady || !cameraRef.current || !rendererRef.current || !sceneRef.current || isLoading) {
-            return;
-        }
-
-        if (!uvUnwrapped) {
-            setStatus("Please unwrap UVs before taking a snapshot.");
-            return;
-        }
-
-        if (activeProjectionIndex === -1) {
-            setStatus("Please add a projection before taking a snapshot.");
-            return;
-        }
-
-        setStatus(`Capturing snapshot for projection #${activeProjectionIndex + 1}...`);
-        setIsLoading(true);
-
-        // 1. Capture Camera State
-        const cam = cameraRef.current;
-        cam.updateMatrixWorld();
-        const stateToSave = {
-            position: cam.position.clone(),
-            quaternion: cam.quaternion.clone(),
-            fov: cam.fov,
-            aspect: cam.aspect,
-            near: cam.near,
-            far: cam.far,
-        };
-
-        // Store the camera state for this projection
-        snapshotCameraStatesRef.current[activeProjectionIndex] = stateToSave;
-
-        // Use setTimeout to allow UI update and ensure render cycle completes
-        setTimeout(() => {
-            if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
-                setStatus("Snapshot failed: Internal error.");
-                setIsLoading(false);
-                snapshotCameraStatesRef.current[activeProjectionIndex] = null;
+    // === Take Snapshot ===
+    const takeSnapshot = useCallback(() => {
+        return new Promise((resolve, reject) => {
+            if (!modelReady || !cameraRef.current || !rendererRef.current || !sceneRef.current) {
+                reject(new Error("Model or renderer not ready"));
                 return;
             }
 
             try {
+                // 1. Capture Camera State
+                const cam = cameraRef.current;
+                cam.updateMatrixWorld();
+                const stateToSave = {
+                    position: cam.position.clone(),
+                    quaternion: cam.quaternion.clone(),
+                    fov: cam.fov,
+                    aspect: cam.aspect,
+                    near: cam.near,
+                    far: cam.far,
+                };
+
                 // Force Render
                 rendererRef.current.render(sceneRef.current, cameraRef.current);
 
@@ -555,141 +532,133 @@ function ProjectedMaterialModelDemo() {
                 const dataURL = rendererRef.current.domElement.toDataURL('image/png');
 
                 if (!dataURL || dataURL === 'data:,') {
-                    throw new Error('Failed to get valid image data from canvas.');
+                    reject(new Error('Failed to get valid image data from canvas.'));
+                    return;
                 }
 
-                // Create download link
-                const link = document.createElement('a');
-                link.href = dataURL;
-                link.download = `projection_${activeProjectionIndex + 1}_snapshot.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Update the current projection state
-                setProjections(prev => {
-                    const updated = [...prev];
-                    updated[activeProjectionIndex] = {
-                        ...updated[activeProjectionIndex],
-                        snapshotTaken: true
-                    };
-                    return updated;
-                });
-
-                setStatus(`Snapshot for projection #${activeProjectionIndex + 1} downloaded. Upload the image for projection.`);
-
+                resolve({ dataURL, cameraState: stateToSave });
             } catch (error) {
-                console.error("Error taking snapshot:", error);
-                setStatus(`Snapshot failed: ${error.message}. Check console.`);
-                snapshotCameraStatesRef.current[activeProjectionIndex] = null;
-            } finally {
-                setIsLoading(false);
+                reject(error);
             }
-        }, 50); // 50ms delay
+        });
+    }, [modelReady]);
 
-    }, [modelReady, activeProjectionIndex, isLoading, uvUnwrapped]);
-
-    // === File Handling: Upload Projection Texture ===
-    const handleTextureUpload = useCallback((event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        // Check if we have an active projection with a snapshot
-        if (activeProjectionIndex === -1) {
-            setStatus("Please add a projection before uploading a texture.");
+    // === Add New AI Projection ===
+    const handleAddAIProjection = useCallback(async () => {
+        if (!uvUnwrapped || !modelReady) {
+            setStatus('Please unwrap UVs before adding projections.');
             return;
         }
 
-        const activeProjection = projections[activeProjectionIndex];
-        if (!activeProjection?.snapshotTaken) {
-            setStatus("Please take a snapshot for this projection before uploading a texture.");
-            return;
-        }
+        try {
+            setIsLoading(true);
+            setStatus('Taking snapshot from current camera position...');
 
-        setIsLoading(true);
-        setStatus(`Loading texture for projection #${activeProjectionIndex + 1}...`);
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
+            // Take snapshot from current camera view
+            const { dataURL, cameraState } = await takeSnapshot();
+            
+            // Create a new projection entry
+            const newProjectionIndex = projections.length;
+            const projectionId = Date.now();
+            
+            // Store the camera state for this projection
+            snapshotCameraStatesRef.current[newProjectionIndex] = cameraState;
+            
+            setStatus('Processing image with AI upscaler...');
+            
+            // Process the image with the AI upscaler
+            const result = await imageUpscaler({
+                image: dataURL,
+                seed: generationParams.seed,
+                resemblance: generationParams.resemblance,
+                prompt: generationParams.prompt,
+                negative_prompt: generationParams.negative_prompt,
+                sharpen: generationParams.sharpen,
+                creativity: generationParams.creativity,
+                num_inference_steps: generationParams.num_inference_steps
+            });
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            if (!result.image) {
+                throw new Error('No image returned from AI upscaler');
+            }
+            
+            // Load the AI-generated texture
+            setStatus('Loading enhanced texture...');
+            
             const loader = new THREE.TextureLoader();
-            loader.load(e.target.result, (texture) => {
-                // Store the texture for this projection
-                if (uploadedTexturesRef.current[activeProjectionIndex]) {
-                    uploadedTexturesRef.current[activeProjectionIndex].dispose();
+            const texture = await new Promise((resolve, reject) => {
+                loader.load(
+                    result.image,
+                    (texture) => resolve(texture),
+                    undefined,
+                    (error) => reject(error)
+                );
+            });
+            
+            // Configure texture settings
+            texture.needsUpdate = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            texture.generateMipmaps = true;
+            texture.anisotropy = 4;
+            
+            // Store the texture
+            uploadedTexturesRef.current[newProjectionIndex] = texture;
+            
+            // Create and add the new projection to state
+            const newProjection = {
+                id: projectionId,
+                name: `Projection ${newProjectionIndex + 1}`,
+                prompt: generationParams.prompt,
+                snapshotTaken: true,
+                textureLoaded: true,
+                isApplied: false,
+                opacity: 1.0
+            };
+            
+            setProjections(prev => [...prev, newProjection]);
+            setActiveProjectionIndex(newProjectionIndex);
+            
+            setStatus('AI-enhanced texture ready. Apply projection to see results.');
+            
+            // Auto-apply the projection
+            await applyProjection(newProjectionIndex, cameraState, texture);
+            
+            // Update the projection to show as applied
+            setProjections(prev => {
+                const updated = [...prev];
+                updated[newProjectionIndex] = {
+                    ...updated[newProjectionIndex],
+                    isApplied: true
+                };
+                return updated;
+            });
+            
+            setStatus(`AI Projection #${newProjectionIndex + 1} created and applied successfully!`);
+            
+        } catch (error) {
+            console.error("Error creating AI projection:", error);
+            setStatus(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [uvUnwrapped, modelReady, projections, generationParams, takeSnapshot]);
+
+    // === Apply Projection ===
+    const applyProjection = useCallback(async (projectionIndex, cameraState, texture) => {
+        return new Promise((resolve, reject) => {
+            try {
+                if (!meshRef.current) {
+                    reject(new Error("Mesh not ready"));
+                    return;
                 }
 
-                texture.needsUpdate = true;
-                // CHANGE: Use mipmapping and proper filtering
-                texture.minFilter = THREE.LinearMipmapLinearFilter;
-                texture.magFilter = THREE.LinearFilter;
-                texture.wrapS = THREE.ClampToEdgeWrapping;
-                texture.wrapT = THREE.ClampToEdgeWrapping;
-                texture.generateMipmaps = true;
-                texture.anisotropy = 4; // Add anisotropic filtering to reduce texture aliasing
-
-                uploadedTexturesRef.current[activeProjectionIndex] = texture;
-
-                // Update state
-                setProjections(prev => {
-                    const updated = [...prev];
-                    updated[activeProjectionIndex] = {
-                        ...updated[activeProjectionIndex],
-                        textureLoaded: true
-                    };
-                    return updated;
-                });
-
-                setStatus(`Texture uploaded for projection #${activeProjectionIndex + 1}. Click Apply Projection.`);
-                setIsLoading(false);
-            }, undefined, (error) => {
-                setStatus(`Error loading texture: ${error.message}`);
-                console.error('Error loading texture:', error);
-                setIsLoading(false);
-            });
-        };
-        reader.onerror = () => {
-            setStatus('Error reading image file.');
-            setIsLoading(false);
-        };
-        reader.readAsDataURL(file);
-        event.target.value = '';
-    }, [projections, activeProjectionIndex]);
-
-    // === Apply Current Projection ===
-    const handleApplyProjection = useCallback(() => {
-        if (!meshRef.current) {
-            console.warn("Apply projection aborted: Mesh not ready.");
-            return;
-        }
-
-        if (activeProjectionIndex === -1) {
-            setStatus("Please select a projection to apply.");
-            return;
-        }
-
-        const projectionData = projections[activeProjectionIndex];
-        if (!projectionData.textureLoaded) {
-            setStatus("Please upload a texture for this projection first.");
-            return;
-        }
-
-        const cameraState = snapshotCameraStatesRef.current[activeProjectionIndex];
-        if (!cameraState) {
-            setStatus("Missing camera state for this projection.");
-            return;
-        }
-
-        const texture = uploadedTexturesRef.current[activeProjectionIndex];
-        if (!texture) {
-            setStatus("Missing texture for this projection.");
-            return;
-        }
-
-        setIsLoading(true);
-        setStatus(`Applying projection #${activeProjectionIndex + 1}...`);
-
-        setTimeout(() => {
-            try {
                 // Create temporary camera using stored state
                 const tempCamera = new THREE.PerspectiveCamera(
                     cameraState.fov, cameraState.aspect,
@@ -700,17 +669,17 @@ function ProjectedMaterialModelDemo() {
                 tempCamera.updateMatrixWorld();
 
                 // Clean up previous projection overlay for this index if it exists
-                if (projectionOverlaysRef.current[activeProjectionIndex]) {
-                    meshRef.current.remove(projectionOverlaysRef.current[activeProjectionIndex]);
-                    projectionOverlaysRef.current[activeProjectionIndex].geometry?.dispose();
-                    projectionOverlaysRef.current[activeProjectionIndex].material?.dispose();
-                    projectionOverlaysRef.current[activeProjectionIndex] = null;
+                if (projectionOverlaysRef.current[projectionIndex]) {
+                    meshRef.current.remove(projectionOverlaysRef.current[projectionIndex]);
+                    projectionOverlaysRef.current[projectionIndex].geometry?.dispose();
+                    projectionOverlaysRef.current[projectionIndex].material?.dispose();
+                    projectionOverlaysRef.current[projectionIndex] = null;
                 }
 
                 // Clean up previous material if it exists
-                if (projectedMaterialsRef.current[activeProjectionIndex]) {
-                    projectedMaterialsRef.current[activeProjectionIndex].dispose();
-                    projectedMaterialsRef.current[activeProjectionIndex] = null;
+                if (projectedMaterialsRef.current[projectionIndex]) {
+                    projectedMaterialsRef.current[projectionIndex].dispose();
+                    projectedMaterialsRef.current[projectionIndex] = null;
                 }
 
                 // Create a new projection material
@@ -723,69 +692,86 @@ function ProjectedMaterialModelDemo() {
                     backgroundOpacity: 0.0,  // Make non-projected areas transparent
                     cover: false,
                     transparent: true,
-                    opacity: projectionData.opacity || 1.0,
+                    opacity: 1.0,
                     side: THREE.FrontSide,
                     depthTest: true,
                     depthWrite: true,
                 });
 
                 // Store the material reference
-                projectedMaterialsRef.current[activeProjectionIndex] = projectionMaterial;
+                projectedMaterialsRef.current[projectionIndex] = projectionMaterial;
 
                 // Create a clone of the mesh geometry for this overlay
                 const overlayGeometry = meshRef.current.geometry.clone();
                 const overlay = new THREE.Mesh(overlayGeometry, projectionMaterial);
-                overlay.name = `projection_overlay_${activeProjectionIndex}`;
+                overlay.name = `projection_overlay_${projectionIndex}`;
 
                 // Scale slightly to avoid z-fighting
-                // Use different scale factors for each projection to prevent fighting between overlays
-                const scaleFactor = 1.0 + (activeProjectionIndex * 0.0001);
+                const scaleFactor = 1.0 + (projectionIndex * 0.0001);
                 overlay.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
                 // Add the overlay as a child of the original mesh
                 meshRef.current.add(overlay);
 
                 // Store the overlay reference
-                projectionOverlaysRef.current[activeProjectionIndex] = overlay;
+                projectionOverlaysRef.current[projectionIndex] = overlay;
 
                 // Project the material onto the overlay mesh
                 projectionMaterial.project(overlay);
 
-                // Update projection state
-                setProjections(prev => {
-                    const updated = [...prev];
-                    updated[activeProjectionIndex] = {
-                        ...updated[activeProjectionIndex],
-                        isApplied: true
-                    };
-                    return updated;
-                });
-
-                setStatus(`Projection #${activeProjectionIndex + 1} applied successfully!`);
-
+                resolve();
+                
             } catch (error) {
                 console.error("Error applying projection:", error);
-                setStatus(`Projection failed: ${error.message}`);
-
-                // Clean up on error
-                if (projectionOverlaysRef.current[activeProjectionIndex]) {
-                    meshRef.current.remove(projectionOverlaysRef.current[activeProjectionIndex]);
-                    projectionOverlaysRef.current[activeProjectionIndex].geometry?.dispose();
-                    projectionOverlaysRef.current[activeProjectionIndex].material?.dispose();
-                    projectionOverlaysRef.current[activeProjectionIndex] = null;
-                }
-
-                if (projectedMaterialsRef.current[activeProjectionIndex]) {
-                    projectedMaterialsRef.current[activeProjectionIndex].dispose();
-                    projectedMaterialsRef.current[activeProjectionIndex] = null;
-                }
-
-            } finally {
-                setIsLoading(false);
+                reject(error);
             }
-        }, 50);
+        });
+    }, []);
 
-    }, [projections, activeProjectionIndex, meshRef]);
+    // === Handle Apply Projection (User triggered) ===
+    const handleApplyProjection = useCallback(async () => {
+        if (activeProjectionIndex === -1) {
+            setStatus("Please select a projection to apply.");
+            return;
+        }
+        
+        const projectionData = projections[activeProjectionIndex];
+        if (!projectionData.textureLoaded) {
+            setStatus("This projection doesn't have a texture loaded.");
+            return;
+        }
+        
+        try {
+            setIsLoading(true);
+            setStatus(`Applying projection #${activeProjectionIndex + 1}...`);
+            
+            const cameraState = snapshotCameraStatesRef.current[activeProjectionIndex];
+            const texture = uploadedTexturesRef.current[activeProjectionIndex];
+            
+            if (!cameraState || !texture) {
+                throw new Error("Missing camera state or texture for this projection.");
+            }
+            
+            await applyProjection(activeProjectionIndex, cameraState, texture);
+            
+            // Update projection state
+            setProjections(prev => {
+                const updated = [...prev];
+                updated[activeProjectionIndex] = {
+                    ...updated[activeProjectionIndex],
+                    isApplied: true
+                };
+                return updated;
+            });
+            
+            setStatus(`Projection #${activeProjectionIndex + 1} applied successfully!`);
+            
+        } catch (error) {
+            setStatus(`Projection failed: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeProjectionIndex, projections, applyProjection]);
 
     // === Handle Select Projection ===
     const handleSelectProjection = useCallback((index) => {
@@ -886,7 +872,7 @@ function ProjectedMaterialModelDemo() {
         setStatus(`${projectionOverlaysRef.current[index].visible ? 'Showed' : 'Hid'} projection #${index + 1}.`);
     }, []);
 
-    // CHANGE: Add helper function for texture dilation
+    // Helper function for texture dilation
     const dilatePixels = useCallback(async (pixelBuffer, width, height, iterations = 3) => {
         const result = new Uint8Array(pixelBuffer);
         const temp = new Uint8Array(pixelBuffer.length);
@@ -984,23 +970,20 @@ function ProjectedMaterialModelDemo() {
                 magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat,
                 type: THREE.UnsignedByteType,
-                // CHANGE: Added these for better quality
-                anisotropy: 4, 
-                generateMipmaps: true
+                anisotropy: 4,
+                generateMipmaps: true,
+                encoding: THREE.sRGBEncoding // Explicitly set sRGB encoding
             });
             
             // Get the original material and texture
             const originalMat = originalMaterialRef.current;
             const originalTexture = originalMat && originalMat.map ? originalMat.map : null;
             
-            // === DIRECT APPROACH: Create a single custom shader that combines all projections ===
-            
             // Set up uniforms
             const uniforms = {
                 originalTexture: { value: originalTexture },
                 hasOriginalTexture: { value: originalTexture ? 1.0 : 0.0 },
                 numProjections: { value: validProjectionIndices.length },
-                // CHANGE: Add texture sampling bias for anti-aliasing
                 samplingBias: { value: 0.003 }
             };
             
@@ -1119,7 +1102,7 @@ function ProjectedMaterialModelDemo() {
                     return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
                 }
                 
-                // CHANGE: Added edge sampling function to eliminate seams
+                // Edge sampling function to eliminate seams
                 vec4 sampleWithBias(sampler2D tex, vec2 uv, float bias) {
                     // Sample center and 4 slightly offset positions
                     vec4 center = texture2D(tex, uv);
@@ -1206,7 +1189,7 @@ function ProjectedMaterialModelDemo() {
                         bool isFacing = dotProduct > -0.2;  // Generous threshold to catch more faces
                         
                         if (isInBounds && isFacing) {
-                            // CHANGE: Use the seam-fixing sampling function
+                            // Use the seam-fixing sampling function
                             vec4 projColor = sampleWithBias(projTexture${i}, projUv, samplingBias);
                             
                             // Only apply where the projection has alpha
@@ -1223,10 +1206,13 @@ function ProjectedMaterialModelDemo() {
                 `;
             });
             
-            // Close the main function
+            // Close the main function with gamma correction
             fragmentShader += `
                     // Ensure output has full alpha
                     finalColor.a = 1.0;
+                    
+                    // Apply gamma correction to prevent brightness shift
+                    finalColor.rgb = pow(finalColor.rgb, vec3(1.0/2.2));
                     
                     gl_FragColor = finalColor;
                 }
@@ -1239,13 +1225,6 @@ function ProjectedMaterialModelDemo() {
                 fragmentShader: fragmentShader,
                 side: THREE.DoubleSide
             });
-            
-            // DEBUG: Log shader code 
-            console.log("=== Vertex Shader ===");
-            console.log(vertexShader);
-            
-            console.log("=== Fragment Shader ===");
-            console.log(fragmentShader);
             
             // Create baking mesh
             const bakingGeometry = meshRef.current.geometry.clone();
@@ -1271,18 +1250,10 @@ function ProjectedMaterialModelDemo() {
                 renderTarget, 0, 0, textureSize, textureSize, pixelBuffer
             );
             
-            // CHANGE: Run the dilation process to fix seams
+            // Run the dilation process to fix seams
             setStatus('Processing texture to fix seams...');
             const dilatedPixels = await dilatePixels(pixelBuffer, textureSize, textureSize, 3);
             
-            // Enhance contrast and brightness slightly
-            for (let i = 0; i < dilatedPixels.length; i += 4) {
-                // Boost color slightly and add a small minimum value to avoid pure black
-                dilatedPixels[i] = Math.min(255, dilatedPixels[i] * 1.1 + 5);
-                dilatedPixels[i+1] = Math.min(255, dilatedPixels[i+1] * 1.1 + 5);
-                dilatedPixels[i+2] = Math.min(255, dilatedPixels[i+2] * 1.1 + 5);
-                dilatedPixels[i+3] = 255; // Full alpha
-            }
             
             // Create the final baked texture
             const bakedTexture = new THREE.DataTexture(
@@ -1291,10 +1262,16 @@ function ProjectedMaterialModelDemo() {
                 textureSize,
                 THREE.RGBAFormat
             );
+            bakedTexture.encoding = THREE.sRGBEncoding;
             bakedTexture.needsUpdate = true;
             bakedTexture.flipY = true;
             
-            // CHANGE: Add proper filtering to baked texture
+            // Set explicit color space for newer Three.js versions
+            if ('colorSpace' in bakedTexture) {
+                bakedTexture.colorSpace = 'srgb';
+            }
+            
+            // Add proper filtering to baked texture
             bakedTexture.minFilter = THREE.LinearMipmapLinearFilter;
             bakedTexture.magFilter = THREE.LinearFilter;
             bakedTexture.generateMipmaps = true;
@@ -1306,13 +1283,12 @@ function ProjectedMaterialModelDemo() {
             // Create a new material with the baked texture
             const bakedMaterial = new THREE.MeshStandardMaterial({
                 map: bakedTexture,
-                roughness: (originalMat && originalMat.roughness) || 0.7,
-                metalness: (originalMat && originalMat.metalness) || 0.1,
-                color: 0xFFFFFF // Ensure white base color
+                roughness: (originalMat && originalMat.roughness !== undefined) ? originalMat.roughness : 0.7,
+                metalness: (originalMat && originalMat.metalness !== undefined) ? originalMat.metalness : 0.1,
+                color: 0xFFFFFF, // Ensure white base color
+                envMapIntensity: (originalMat && originalMat.envMapIntensity !== undefined) ? originalMat.envMapIntensity : 1.0,
+                normalScale: (originalMat && originalMat.normalScale) ? originalMat.normalScale.clone() : new THREE.Vector2(1, 1)
             });
-            
-            // Show debug image of the baked texture
-            console.log("Baked texture created with dimensions:", textureSize, "×", textureSize);
             
             // Remove all projection overlays
             projectionOverlaysRef.current.forEach((overlay, i) => {
@@ -1346,58 +1322,74 @@ function ProjectedMaterialModelDemo() {
             setStatus('Cannot export: No baked texture available.');
             return;
         }
-
+    
         try {
             setIsLoading(true);
             setStatus('Exporting model...');
-
+    
             // Ensure the texture is set correctly
             console.log('Material before export:', meshRef.current.material);
-
+    
             // Force a material update to ensure texture is applied
             if (meshRef.current.material) {
                 meshRef.current.material.needsUpdate = true;
-
+    
                 // Ensure the texture is properly attached
                 if (bakedTextureRef.current) {
                     meshRef.current.material.map = bakedTextureRef.current;
                     meshRef.current.material.map.needsUpdate = true;
                 }
             }
-
+    
             // Create a scene for export with the mesh
             const exportScene = new THREE.Scene();
-
+    
             // Clone the current mesh
             const exportMesh = meshRef.current.clone();
-
-            // Create a separate material instance for export
+    
+            // Create a separate material instance for export with exact property matching
             exportMesh.material = new THREE.MeshStandardMaterial({
                 map: bakedTextureRef.current,
-                roughness: 0.8,
-                metalness: 0.1
+                roughness: meshRef.current.material.roughness,
+                metalness: meshRef.current.material.metalness,
+                normalScale: meshRef.current.material.normalScale ? meshRef.current.material.normalScale.clone() : new THREE.Vector2(1, 1),
+                envMapIntensity: meshRef.current.material.envMapIntensity || 1.0
             });
-
-            // CHANGE: Add proper filtering to exported texture
-            exportMesh.material.map.minFilter = THREE.LinearMipmapLinearFilter;
-            exportMesh.material.map.magFilter = THREE.LinearFilter;
-            exportMesh.material.map.generateMipmaps = true;
-            exportMesh.material.map.anisotropy = 4;
-            exportMesh.material.map.needsUpdate = true;
+    
+            // Set correct texture parameters for export
+            if (exportMesh.material.map) {
+                exportMesh.material.map.encoding = THREE.sRGBEncoding;
+                
+                // For newer Three.js versions
+                if ('colorSpace' in exportMesh.material.map) {
+                    exportMesh.material.map.colorSpace = 'srgb';
+                }
+                
+                exportMesh.material.map.minFilter = THREE.LinearMipmapLinearFilter;
+                exportMesh.material.map.magFilter = THREE.LinearFilter;
+                exportMesh.material.map.generateMipmaps = true;
+                exportMesh.material.map.anisotropy = 4;
+                exportMesh.material.map.needsUpdate = true;
+            }
+            
             exportMesh.material.needsUpdate = true;
-
+    
             // Add to the export scene
             exportScene.add(exportMesh);
-
-            // Export options
+    
+            // Export options with explicit color space handling
             const options = {
                 binary: true,
                 embedImages: true,
                 includeCustomExtensions: true,
                 forceIndices: true,
-                forcePowerOfTwoTextures: false
+                forcePowerOfTwoTextures: false,
+                trs: false, // Don't decompose matrices which can affect values
+                onlyVisible: true,
+                truncateDrawRange: true,
+                animations: []
             };
-
+    
             // Do the export
             const exporter = new GLTFExporter();
             exporter.parse(
@@ -1413,7 +1405,7 @@ function ProjectedMaterialModelDemo() {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-
+    
                     setStatus('Model exported successfully with baked textures!');
                     setIsLoading(false);
                 },
@@ -1424,7 +1416,7 @@ function ProjectedMaterialModelDemo() {
                 },
                 options
             );
-
+    
         } catch (error) {
             console.error('Error in export process:', error);
             setStatus(`Export process failed: ${error.message}`);
@@ -1432,15 +1424,20 @@ function ProjectedMaterialModelDemo() {
         }
     }, [isBaked]);
 
+    // Generate a new random seed
+    const handleRandomizeSeed = useCallback(() => {
+        updateParams('seed', Math.floor(Math.random() * 1000000));
+    }, []);
+
     // === JSX Rendering with Sidebar ===
     return (
         <div className="flex h-full relative">
-            {/* Sidebar - Using the same structure as Image3D */}
+            {/* Sidebar */}
             <Sidebar className="border-r border-border w-80" variant="inset" collapsible="none">
                 <SidebarContent>
                     <SidebarGroup>
                         <SidebarGroupLabel className="text-xl font-semibold text-primary px-4 py-3">
-                            Re-Texture 3D Model
+                            AI Re-Texture 3D Model
                         </SidebarGroupLabel>
                         <hr className="border-border" />
 
@@ -1483,27 +1480,140 @@ function ProjectedMaterialModelDemo() {
 
                             {uvUnwrapped && (
                                 <>
-                                    {/* Projections Section */}
-                                    <div className="space-y-2 border-t border-border pt-4 mt-4">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-sm font-medium">Projections</Label>
-                                            <Button
-                                                onClick={handleAddProjection}
-                                                disabled={isLoading || isBaked}
-                                                size="sm"
-                                                variant="outline"
-                                            >
-                                                + Add New
-                                            </Button>
+                                    {/* Step 3: AI Projection Settings */}
+                                    <div className="space-y-3 border border-border rounded-md p-3 bg-muted/30">
+                                        <div className="text-sm font-medium text-primary flex items-center gap-1.5">
+                                            <Sparkles className="h-4 w-4" />
+                                            (3) AI Texture Settings
                                         </div>
-
-                                        {/* Projection List */}
-                                        <div className="max-h-40 overflow-y-auto rounded-md border border-border">
-                                            {projections.length === 0 ? (
-                                                <div className="p-3 text-center text-sm text-muted-foreground">
-                                                    No projections yet. Click "Add New" to create one.
+                                        
+                                        <Tabs defaultValue="prompt" className="w-full">
+                                            <TabsList className="grid w-full grid-cols-2">
+                                                <TabsTrigger value="prompt">Prompt</TabsTrigger>
+                                                <TabsTrigger value="params">Parameters</TabsTrigger>
+                                            </TabsList>
+                                            
+                                            <TabsContent value="prompt" className="space-y-3 pt-2">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="prompt" className="text-xs">Prompt:</Label>
+                                                    <Textarea
+                                                        id="prompt"
+                                                        placeholder="Describe the texture you want..."
+                                                        value={generationParams.prompt}
+                                                        onChange={(e) => updateParams('prompt', e.target.value)}
+                                                        className="min-h-[80px] text-xs"
+                                                    />
                                                 </div>
-                                            ) : (
+                                                
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="negativePrompt" className="text-xs">Negative Prompt:</Label>
+                                                    <Textarea
+                                                        id="negativePrompt"
+                                                        placeholder="What to avoid in the texture..."
+                                                        value={generationParams.negative_prompt}
+                                                        onChange={(e) => updateParams('negative_prompt', e.target.value)}
+                                                        className="min-h-[60px] text-xs"
+                                                    />
+                                                </div>
+                                            </TabsContent>
+                                            
+                                            <TabsContent value="params" className="space-y-3 pt-2">
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="seed" className="text-xs">Seed:</Label>
+                                                        <Button 
+                                                            onClick={handleRandomizeSeed}
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-6 text-xs"
+                                                        >
+                                                            Randomize
+                                                        </Button>
+                                                    </div>
+                                                    <Input
+                                                        id="seed"
+                                                        type="number"
+                                                        value={generationParams.seed}
+                                                        onChange={(e) => updateParams('seed', parseInt(e.target.value))}
+                                                        className="text-xs"
+                                                    />
+                                                </div>
+                                                
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="resemblance" className="text-xs">Resemblance: {generationParams.resemblance.toFixed(2)}</Label>
+                                                    </div>
+                                                    <Slider
+                                                        id="resemblance"
+                                                        min={0.1}
+                                                        max={1.0}
+                                                        step={0.05}
+                                                        value={[generationParams.resemblance]}
+                                                        onValueChange={(value) => updateParams('resemblance', value[0])}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="creativity" className="text-xs">Creativity: {generationParams.creativity.toFixed(2)}</Label>
+                                                    </div>
+                                                    <Slider
+                                                        id="creativity"
+                                                        min={0.1}
+                                                        max={1.0}
+                                                        step={0.05}
+                                                        value={[generationParams.creativity]}
+                                                        onValueChange={(value) => updateParams('creativity', value[0])}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="sharpen" className="text-xs">Sharpen: {generationParams.sharpen.toFixed(2)}</Label>
+                                                    </div>
+                                                    <Slider
+                                                        id="sharpen"
+                                                        min={0}
+                                                        max={1.0}
+                                                        step={0.05}
+                                                        value={[generationParams.sharpen]}
+                                                        onValueChange={(value) => updateParams('sharpen', value[0])}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="steps" className="text-xs">Steps: {generationParams.num_inference_steps}</Label>
+                                                    </div>
+                                                    <Slider
+                                                        id="steps"
+                                                        min={8}
+                                                        max={30}
+                                                        step={1}
+                                                        value={[generationParams.num_inference_steps]}
+                                                        onValueChange={(value) => updateParams('num_inference_steps', value[0])}
+                                                    />
+                                                </div>
+                                            </TabsContent>
+                                        </Tabs>
+                                        
+                                        {/* Add Projection Button */}
+                                        <Button
+                                            onClick={handleAddAIProjection}
+                                            disabled={isLoading || isBaked}
+                                            className="w-full"
+                                        >
+                                            <Sparkles className="h-4 w-4 mr-2" />
+                                            Generate AI Projection
+                                        </Button>
+                                    </div>
+                                    
+                                    {/* Projections List */}
+                                    {projections.length > 0 && (
+                                        <div className="space-y-2 border-t border-border pt-4 mt-4">
+                                            <Label className="text-sm font-medium">Projections</Label>
+                                            
+                                            <div className="max-h-40 overflow-y-auto rounded-md border border-border">
                                                 <div className="divide-y divide-border">
                                                     {projections.map((proj, index) => (
                                                         <div
@@ -1532,104 +1642,66 @@ function ProjectedMaterialModelDemo() {
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
-                                    </div>
-
+                                    )}
+                                    
                                     {/* Active Projection Controls */}
                                     {activeProjectionIndex !== -1 && (
                                         <div className="space-y-3 border border-border rounded-md p-3 bg-muted/30">
                                             <div className="text-sm font-medium text-primary">
                                                 {projections[activeProjectionIndex]?.name || `Projection ${activeProjectionIndex + 1}`}
                                             </div>
-
-                                            {/* Snapshot Button */}
-                                            <Button
-                                                onClick={handleTakeSnapshot}
-                                                disabled={isLoading || isBaked}
-                                                className="w-full"
-                                                variant={projections[activeProjectionIndex]?.snapshotTaken ? "outline" : "default"}
-                                            >
-                                                {projections[activeProjectionIndex]?.snapshotTaken ? (
-                                                    <>
-                                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                                        Snapshot Taken
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Image className="h-4 w-4 mr-2" />
-                                                        (3) Take Snapshot
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            {/* Texture Upload */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="textureInput" className="text-xs font-medium">
-                                                    (4) Upload Projection Image:
-                                                </Label>
-                                                <Input
-                                                    type="file"
-                                                    id="textureInput"
-                                                    accept="image/*"
-                                                    onChange={handleTextureUpload}
-                                                    disabled={!projections[activeProjectionIndex]?.snapshotTaken || isLoading || isBaked}
-                                                    className="text-xs"
-                                                />
-                                            </div>
-
+                                            
                                             {/* Apply Projection Button */}
-                                            <Button
-                                                onClick={handleApplyProjection}
-                                                disabled={!projections[activeProjectionIndex]?.textureLoaded || isLoading || isBaked}
-                                                className="w-full"
-                                                variant={projections[activeProjectionIndex]?.isApplied ? "outline" : "default"}
-                                            >
-                                                {projections[activeProjectionIndex]?.isApplied ? (
-                                                    <>
-                                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                                        Projection Applied
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Wand2 className="h-4 w-4 mr-2" />
-                                                        (5) Apply Projection
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            {/* Opacity Control */}
-                                            {projections[activeProjectionIndex]?.isApplied && !isBaked && (
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="opacitySlider" className="text-xs">Opacity:</Label>
-                                                    <input
-                                                        type="range"
-                                                        id="opacitySlider"
-                                                        min="0.1"
-                                                        max="1"
-                                                        step="0.05"
-                                                        value={projections[activeProjectionIndex]?.opacity || 1}
-                                                        onChange={(e) => handleAdjustProjectionOpacity(parseFloat(e.target.value))}
-                                                        className="w-full"
-                                                    />
+                                            {!projections[activeProjectionIndex]?.isApplied && (
+                                                <Button
+                                                    onClick={handleApplyProjection}
+                                                    disabled={isLoading || isBaked}
+                                                    className="w-full"
+                                                >
+                                                    <Wand2 className="h-4 w-4 mr-2" />
+                                                    Apply Projection
+                                                </Button>
+                                            )}
+                                            
+                                            {/* Projection Details */}
+                                            {projections[activeProjectionIndex]?.prompt && (
+                                                <div className="text-xs text-muted-foreground border-t border-border pt-2 mt-1">
+                                                    <p className="font-medium mb-1">Prompt:</p>
+                                                    <p className="line-clamp-3">{projections[activeProjectionIndex].prompt}</p>
                                                 </div>
                                             )}
-
-                                            {/* Visibility Toggle */}
+                                            
+                                            {/* Opacity Control */}
                                             {projections[activeProjectionIndex]?.isApplied && !isBaked && (
-                                                <Button
-                                                    onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
-                                                    className="w-full"
-                                                    variant="outline"
-                                                >
-                                                    {projections[activeProjectionIndex]?.visible === false
-                                                        ? 'Show Projection'
-                                                        : 'Hide Projection'}
-                                                </Button>
+                                                <div className="space-y-2 border-t border-border pt-2 mt-1">
+                                                    <Label htmlFor="opacitySlider" className="text-xs">Opacity:</Label>
+                                                    <Slider
+                                                        id="opacitySlider"
+                                                        min={0.1}
+                                                        max={1}
+                                                        step={0.05}
+                                                        value={[projections[activeProjectionIndex]?.opacity || 1]}
+                                                        onValueChange={(value) => handleAdjustProjectionOpacity(value[0])}
+                                                    />
+                                                    
+                                                    {/* Visibility Toggle */}
+                                                    <Button
+                                                        onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
+                                                        className="w-full mt-2"
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
+                                                        {projections[activeProjectionIndex]?.visible === false
+                                                            ? 'Show Projection'
+                                                            : 'Hide Projection'}
+                                                    </Button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
-
+                                    
                                     {/* Bake and Export Buttons */}
                                     {projections.some(p => p.isApplied) && (
                                         <div className="space-y-2 border-t border-border pt-4 mt-4">
@@ -1647,7 +1719,7 @@ function ProjectedMaterialModelDemo() {
                                                 ) : (
                                                     <>
                                                         <Wand2 className="h-4 w-4 mr-2" />
-                                                        (6) Bake All Projections
+                                                        (4) Bake All Projections
                                                     </>
                                                 )}
                                             </Button>
@@ -1659,7 +1731,7 @@ function ProjectedMaterialModelDemo() {
                                                 variant="secondary"
                                             >
                                                 <UploadCloud className="h-4 w-4 mr-2" />
-                                                (7) Export Model
+                                                (5) Export Model
                                             </Button>
                                         </div>
                                     )}
