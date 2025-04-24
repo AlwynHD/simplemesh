@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
-import ProjectedMaterial, { allocateProjectionData } from 'three-projected-material';
+import ProjectedMaterial, { allocateProjectionData } from '@/components/retexture-components/CustomProjectedMaterial';
 import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { imageUpscaler } from '@/components/retexture-components/retextureActions';
