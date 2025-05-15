@@ -10,11 +10,11 @@ import { imageUpscaler } from '@/components/retexture-components/retextureAction
 
 // UI Components
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -76,7 +76,7 @@ function ProjectedMaterialModelDemo() {
         creativity: 0.35,
         num_inference_steps: 18
     });
-    
+
     // Function to update generation parameters
     const updateParams = (param, value) => {
         setGenerationParams(prev => ({
@@ -556,16 +556,16 @@ function ProjectedMaterialModelDemo() {
 
             // Take snapshot from current camera view
             const { dataURL, cameraState } = await takeSnapshot();
-            
+
             // Create a new projection entry
             const newProjectionIndex = projections.length;
             const projectionId = Date.now();
-            
+
             // Store the camera state for this projection
             snapshotCameraStatesRef.current[newProjectionIndex] = cameraState;
-            
+
             setStatus('Processing image with AI upscaler...');
-            
+
             // Process the image with the AI upscaler
             const result = await imageUpscaler({
                 image: dataURL,
@@ -577,18 +577,18 @@ function ProjectedMaterialModelDemo() {
                 creativity: generationParams.creativity,
                 num_inference_steps: generationParams.num_inference_steps
             });
-            
+
             if (result.error) {
                 throw new Error(result.error);
             }
-            
+
             if (!result.image) {
                 throw new Error('No image returned from AI upscaler');
             }
-            
+
             // Load the AI-generated texture
             setStatus('Loading enhanced texture...');
-            
+
             const loader = new THREE.TextureLoader();
             const texture = await new Promise((resolve, reject) => {
                 loader.load(
@@ -598,7 +598,7 @@ function ProjectedMaterialModelDemo() {
                     (error) => reject(error)
                 );
             });
-            
+
             // Configure texture settings
             texture.needsUpdate = true;
             texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -607,10 +607,10 @@ function ProjectedMaterialModelDemo() {
             texture.wrapT = THREE.ClampToEdgeWrapping;
             texture.generateMipmaps = true;
             texture.anisotropy = 4;
-            
+
             // Store the texture
             uploadedTexturesRef.current[newProjectionIndex] = texture;
-            
+
             // Create and add the new projection to state
             const newProjection = {
                 id: projectionId,
@@ -621,15 +621,15 @@ function ProjectedMaterialModelDemo() {
                 isApplied: false,
                 opacity: 1.0
             };
-            
+
             setProjections(prev => [...prev, newProjection]);
             setActiveProjectionIndex(newProjectionIndex);
-            
+
             setStatus('AI-enhanced texture ready. Apply projection to see results.');
-            
+
             // Auto-apply the projection
             await applyProjection(newProjectionIndex, cameraState, texture);
-            
+
             // Update the projection to show as applied
             setProjections(prev => {
                 const updated = [...prev];
@@ -639,9 +639,9 @@ function ProjectedMaterialModelDemo() {
                 };
                 return updated;
             });
-            
+
             setStatus(`AI Projection #${newProjectionIndex + 1} created and applied successfully!`);
-            
+
         } catch (error) {
             console.error("Error creating AI projection:", error);
             setStatus(`Error: ${error.message}`);
@@ -650,6 +650,7 @@ function ProjectedMaterialModelDemo() {
         }
     }, [uvUnwrapped, modelReady, projections, generationParams, takeSnapshot]);
 
+    // === Apply Projection ===
     // === Apply Projection ===
     const applyProjection = useCallback(async (projectionIndex, cameraState, texture) => {
         return new Promise((resolve, reject) => {
@@ -682,7 +683,7 @@ function ProjectedMaterialModelDemo() {
                     projectedMaterialsRef.current[projectionIndex] = null;
                 }
 
-                // Create a new projection material
+                // Create a new projection material with depth testing enabled
                 const projectionMaterial = new ProjectedMaterial({
                     camera: tempCamera,
                     texture: texture,
@@ -696,6 +697,8 @@ function ProjectedMaterialModelDemo() {
                     side: THREE.FrontSide,
                     depthTest: true,
                     depthWrite: true,
+                    enableDepthTest: true,  // Enable depth testing
+                    depthBias: 0.005,      // Adjust as needed for your model
                 });
 
                 // Store the material reference
@@ -716,11 +719,11 @@ function ProjectedMaterialModelDemo() {
                 // Store the overlay reference
                 projectionOverlaysRef.current[projectionIndex] = overlay;
 
-                // Project the material onto the overlay mesh
-                projectionMaterial.project(overlay);
+                // Project the material onto the overlay mesh with depth testing
+                projectionMaterial.project(overlay, rendererRef.current, sceneRef.current);
 
                 resolve();
-                
+
             } catch (error) {
                 console.error("Error applying projection:", error);
                 reject(error);
@@ -734,26 +737,26 @@ function ProjectedMaterialModelDemo() {
             setStatus("Please select a projection to apply.");
             return;
         }
-        
+
         const projectionData = projections[activeProjectionIndex];
         if (!projectionData.textureLoaded) {
             setStatus("This projection doesn't have a texture loaded.");
             return;
         }
-        
+
         try {
             setIsLoading(true);
             setStatus(`Applying projection #${activeProjectionIndex + 1}...`);
-            
+
             const cameraState = snapshotCameraStatesRef.current[activeProjectionIndex];
             const texture = uploadedTexturesRef.current[activeProjectionIndex];
-            
+
             if (!cameraState || !texture) {
                 throw new Error("Missing camera state or texture for this projection.");
             }
-            
+
             await applyProjection(activeProjectionIndex, cameraState, texture);
-            
+
             // Update projection state
             setProjections(prev => {
                 const updated = [...prev];
@@ -763,9 +766,9 @@ function ProjectedMaterialModelDemo() {
                 };
                 return updated;
             });
-            
+
             setStatus(`Projection #${activeProjectionIndex + 1} applied successfully!`);
-            
+
         } catch (error) {
             setStatus(`Projection failed: ${error.message}`);
         } finally {
@@ -876,56 +879,56 @@ function ProjectedMaterialModelDemo() {
     const dilatePixels = useCallback(async (pixelBuffer, width, height, iterations = 3) => {
         const result = new Uint8Array(pixelBuffer);
         const temp = new Uint8Array(pixelBuffer.length);
-        
+
         for (let iteration = 0; iteration < iterations; iteration++) {
             // Copy current result to temp buffer
             for (let i = 0; i < result.length; i++) {
                 temp[i] = result[i];
             }
-            
+
             // Perform dilation
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const idx = (y * width + x) * 4;
-                    
+
                     // Skip if pixel already has color
-                    if (temp[idx+3] > 128) continue;
-                    
+                    if (temp[idx + 3] > 128) continue;
+
                     // Check neighbors (8-connected neighborhood)
                     let hasNeighbor = false;
                     let r = 0, g = 0, b = 0, count = 0;
-                    
+
                     // Check 8 neighbors
                     const neighbors = [
-                        {x: x+1, y: y}, {x: x-1, y: y},
-                        {x: x, y: y+1}, {x: x, y: y-1},
-                        {x: x+1, y: y+1}, {x: x-1, y: y-1},
-                        {x: x+1, y: y-1}, {x: x-1, y: y+1}
+                        { x: x + 1, y: y }, { x: x - 1, y: y },
+                        { x: x, y: y + 1 }, { x: x, y: y - 1 },
+                        { x: x + 1, y: y + 1 }, { x: x - 1, y: y - 1 },
+                        { x: x + 1, y: y - 1 }, { x: x - 1, y: y + 1 }
                     ];
-                    
+
                     for (const n of neighbors) {
                         if (n.x < 0 || n.x >= width || n.y < 0 || n.y >= height) continue;
-                        
+
                         const nIdx = (n.y * width + n.x) * 4;
-                        if (temp[nIdx+3] > 128) {
+                        if (temp[nIdx + 3] > 128) {
                             r += temp[nIdx];
-                            g += temp[nIdx+1];
-                            b += temp[nIdx+2];
+                            g += temp[nIdx + 1];
+                            b += temp[nIdx + 2];
                             count++;
                             hasNeighbor = true;
                         }
                     }
-                    
+
                     if (hasNeighbor) {
-                        result[idx] = Math.round(r/count);
-                        result[idx+1] = Math.round(g/count);
-                        result[idx+2] = Math.round(b/count);
-                        result[idx+3] = 255; // Full alpha
+                        result[idx] = Math.round(r / count);
+                        result[idx + 1] = Math.round(g / count);
+                        result[idx + 2] = Math.round(b / count);
+                        result[idx + 3] = 255; // Full alpha
                     }
                 }
             }
         }
-        
+
         return result;
     }, []);
 
@@ -935,35 +938,35 @@ function ProjectedMaterialModelDemo() {
             setStatus('Cannot bake: No mesh available.');
             return;
         }
-        
+
         // Check if we have any applied projections
         const appliedProjections = projections.filter(p => p.isApplied);
         if (appliedProjections.length === 0) {
             setStatus('Cannot bake: No projections have been applied.');
             return;
         }
-        
+
         try {
             setIsLoading(true);
             setStatus('Baking all projections into a single texture...');
-            
+
             // Find all valid projections
             const validProjectionIndices = [];
             for (let i = 0; i < projections.length; i++) {
-                if (projections[i].isApplied && 
-                    projectionOverlaysRef.current[i] && 
+                if (projections[i].isApplied &&
+                    projectionOverlaysRef.current[i] &&
                     uploadedTexturesRef.current[i] &&
                     projectionOverlaysRef.current[i].visible !== false) {
                     validProjectionIndices.push(i);
                 }
             }
-            
+
             console.log(`Found ${validProjectionIndices.length} valid projections to bake`);
-            
+
             if (validProjectionIndices.length === 0) {
                 throw new Error('No valid projections found to bake');
             }
-            
+
             // Create a render target with proper settings
             const renderTarget = new THREE.WebGLRenderTarget(textureSize, textureSize, {
                 minFilter: THREE.LinearFilter,
@@ -974,11 +977,11 @@ function ProjectedMaterialModelDemo() {
                 generateMipmaps: true,
                 encoding: THREE.sRGBEncoding // Explicitly set sRGB encoding
             });
-            
+
             // Get the original material and texture
             const originalMat = originalMaterialRef.current;
             const originalTexture = originalMat && originalMat.map ? originalMat.map : null;
-            
+
             // Set up uniforms
             const uniforms = {
                 originalTexture: { value: originalTexture },
@@ -986,69 +989,69 @@ function ProjectedMaterialModelDemo() {
                 numProjections: { value: validProjectionIndices.length },
                 samplingBias: { value: 0.003 }
             };
-            
+
             // Add uniforms for each valid projection
             validProjectionIndices.forEach((projIndex, i) => {
                 // Get the required references
                 const projMaterial = projectedMaterialsRef.current[projIndex];
                 const projTexture = uploadedTexturesRef.current[projIndex];
-                
+
                 if (!projMaterial || !projTexture) {
                     console.warn(`Missing material or texture for projection ${projIndex}`);
                     return;
                 }
-                
+
                 console.log(`Adding uniforms for projection ${projIndex} at shader index ${i}`);
-                
+
                 // Add required uniforms
                 uniforms[`projTexture${i}`] = { value: projTexture };
-                uniforms[`viewMatrix${i}`] = { 
-                    value: projMaterial.uniforms.viewMatrixCamera?.value || new THREE.Matrix4() 
+                uniforms[`viewMatrix${i}`] = {
+                    value: projMaterial.uniforms.viewMatrixCamera?.value || new THREE.Matrix4()
                 };
-                uniforms[`projMatrix${i}`] = { 
-                    value: projMaterial.uniforms.projectionMatrixCamera?.value || new THREE.Matrix4() 
+                uniforms[`projMatrix${i}`] = {
+                    value: projMaterial.uniforms.projectionMatrixCamera?.value || new THREE.Matrix4()
                 };
-                uniforms[`modelMatrix${i}`] = { 
-                    value: projMaterial.uniforms.savedModelMatrix?.value || new THREE.Matrix4() 
+                uniforms[`modelMatrix${i}`] = {
+                    value: projMaterial.uniforms.savedModelMatrix?.value || new THREE.Matrix4()
                 };
-                
+
                 // Additional uniforms that might be used in the projected material
                 if (projMaterial.uniforms.projPosition) {
                     uniforms[`projPosition${i}`] = { value: projMaterial.uniforms.projPosition.value };
                 }
-                
+
                 if (projMaterial.uniforms.projDirection) {
                     uniforms[`projDirection${i}`] = { value: projMaterial.uniforms.projDirection.value };
                 }
-                
+
                 if (projMaterial.uniforms.widthScaled) {
                     uniforms[`widthScaled${i}`] = { value: projMaterial.uniforms.widthScaled.value };
                 }
-                
+
                 if (projMaterial.uniforms.heightScaled) {
                     uniforms[`heightScaled${i}`] = { value: projMaterial.uniforms.heightScaled.value };
                 }
-                
+
                 if (projMaterial.uniforms.textureOffset) {
                     uniforms[`textureOffset${i}`] = { value: projMaterial.uniforms.textureOffset.value };
                 }
-                
+
                 // Add opacity uniform
                 uniforms[`opacity${i}`] = { value: projections[projIndex].opacity || 1.0 };
             });
-            
+
             // Create vertex shader
             let vertexShader = `
                 varying vec2 vUv;
                 varying vec3 vNormal;
                 varying vec3 vWorldPosition;
             `;
-            
+
             // Add varying declarations for each projection
             validProjectionIndices.forEach((_, i) => {
                 vertexShader += `varying vec4 vTexCoords${i};\n`;
             });
-            
+
             // Add uniform declarations for matrices
             validProjectionIndices.forEach((_, i) => {
                 vertexShader += `
@@ -1057,7 +1060,7 @@ function ProjectedMaterialModelDemo() {
                     uniform mat4 modelMatrix${i};
                 `;
             });
-            
+
             // Complete the vertex shader with main function
             vertexShader += `
                 void main() {
@@ -1070,7 +1073,7 @@ function ProjectedMaterialModelDemo() {
                     vec4 worldPos = modelViewMatrix * vec4(position, 1.0);
                     vWorldPosition = worldPos.xyz;
             `;
-            
+
             // Add texture coordinate calculations for each projection
             validProjectionIndices.forEach((_, i) => {
                 vertexShader += `
@@ -1078,14 +1081,14 @@ function ProjectedMaterialModelDemo() {
                     vTexCoords${i} = projMatrix${i} * viewMatrix${i} * modelMatrix${i} * vec4(position, 1.0);
                 `;
             });
-            
+
             // Close the main function
             vertexShader += `
                     // Position in UV space for render target
                     gl_Position = vec4(uv * 2.0 - 1.0, 0.0, 1.0);
                 }
             `;
-            
+
             // Create fragment shader
             let fragmentShader = `
                 uniform sampler2D originalTexture;
@@ -1132,7 +1135,7 @@ function ProjectedMaterialModelDemo() {
                     return center;
                 }
             `;
-            
+
             // Add uniforms and varyings for each projection
             validProjectionIndices.forEach((_, i) => {
                 fragmentShader += `
@@ -1140,7 +1143,7 @@ function ProjectedMaterialModelDemo() {
                     uniform float opacity${i};
                     varying vec4 vTexCoords${i};
                 `;
-                
+
                 // Add optional uniforms
                 fragmentShader += `
                     uniform vec3 projPosition${i};
@@ -1150,7 +1153,7 @@ function ProjectedMaterialModelDemo() {
                     uniform vec2 textureOffset${i};
                 `;
             });
-            
+
             // Start the main function
             fragmentShader += `
                 void main() {
@@ -1161,7 +1164,7 @@ function ProjectedMaterialModelDemo() {
                         finalColor = texture2D(originalTexture, vUv);
                     }
             `;
-            
+
             // Add processing for each projection
             validProjectionIndices.forEach((_, i) => {
                 fragmentShader += `
@@ -1205,7 +1208,7 @@ function ProjectedMaterialModelDemo() {
                     }
                 `;
             });
-            
+
             // Close the main function with gamma correction
             fragmentShader += `
                     // Ensure output has full alpha
@@ -1217,7 +1220,7 @@ function ProjectedMaterialModelDemo() {
                     gl_FragColor = finalColor;
                 }
             `;
-            
+
             // Create the custom shader material
             const bakingMaterial = new THREE.ShaderMaterial({
                 uniforms: uniforms,
@@ -1225,36 +1228,36 @@ function ProjectedMaterialModelDemo() {
                 fragmentShader: fragmentShader,
                 side: THREE.DoubleSide
             });
-            
+
             // Create baking mesh
             const bakingGeometry = meshRef.current.geometry.clone();
             const bakingMesh = new THREE.Mesh(bakingGeometry, bakingMaterial);
-            
+
             // Create a scene for baking
             const bakingScene = new THREE.Scene();
             bakingScene.add(bakingMesh);
-            
+
             // Setup an orthographic camera for UV rendering
             const bakingCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
-            
+
             // Render to the texture
             rendererRef.current.setRenderTarget(renderTarget);
             rendererRef.current.setClearColor(0x000000, 0);
             rendererRef.current.clear();
             rendererRef.current.render(bakingScene, bakingCamera);
             rendererRef.current.setRenderTarget(null);
-            
+
             // Create a texture from the render target
             const pixelBuffer = new Uint8Array(4 * textureSize * textureSize);
             rendererRef.current.readRenderTargetPixels(
                 renderTarget, 0, 0, textureSize, textureSize, pixelBuffer
             );
-            
+
             // Run the dilation process to fix seams
             setStatus('Processing texture to fix seams...');
             const dilatedPixels = await dilatePixels(pixelBuffer, textureSize, textureSize, 3);
-            
-            
+
+
             // Create the final baked texture
             const bakedTexture = new THREE.DataTexture(
                 dilatedPixels,
@@ -1265,21 +1268,21 @@ function ProjectedMaterialModelDemo() {
             bakedTexture.encoding = THREE.sRGBEncoding;
             bakedTexture.needsUpdate = true;
             bakedTexture.flipY = true;
-            
+
             // Set explicit color space for newer Three.js versions
             if ('colorSpace' in bakedTexture) {
                 bakedTexture.colorSpace = 'srgb';
             }
-            
+
             // Add proper filtering to baked texture
             bakedTexture.minFilter = THREE.LinearMipmapLinearFilter;
             bakedTexture.magFilter = THREE.LinearFilter;
             bakedTexture.generateMipmaps = true;
             bakedTexture.anisotropy = 4;
-            
+
             // Store the baked texture
             bakedTextureRef.current = bakedTexture;
-            
+
             // Create a new material with the baked texture
             const bakedMaterial = new THREE.MeshStandardMaterial({
                 map: bakedTexture,
@@ -1289,25 +1292,25 @@ function ProjectedMaterialModelDemo() {
                 envMapIntensity: (originalMat && originalMat.envMapIntensity !== undefined) ? originalMat.envMapIntensity : 1.0,
                 normalScale: (originalMat && originalMat.normalScale) ? originalMat.normalScale.clone() : new THREE.Vector2(1, 1)
             });
-            
+
             // Remove all projection overlays
             projectionOverlaysRef.current.forEach((overlay, i) => {
                 if (overlay && meshRef.current) {
                     meshRef.current.remove(overlay);
                 }
             });
-            
+
             // Apply the baked material
             meshRef.current.material = bakedMaterial;
-            
+
             // Clean up
             renderTarget.dispose();
             bakingGeometry.dispose();
             bakingMaterial.dispose();
-            
+
             setStatus(`All ${validProjectionIndices.length} projections baked into a single texture! Ready for export.`);
             setIsBaked(true);
-            
+
         } catch (error) {
             console.error('Error baking projections:', error);
             setStatus(`Failed to bake projections: ${error.message}`);
@@ -1322,31 +1325,31 @@ function ProjectedMaterialModelDemo() {
             setStatus('Cannot export: No baked texture available.');
             return;
         }
-    
+
         try {
             setIsLoading(true);
             setStatus('Exporting model...');
-    
+
             // Ensure the texture is set correctly
             console.log('Material before export:', meshRef.current.material);
-    
+
             // Force a material update to ensure texture is applied
             if (meshRef.current.material) {
                 meshRef.current.material.needsUpdate = true;
-    
+
                 // Ensure the texture is properly attached
                 if (bakedTextureRef.current) {
                     meshRef.current.material.map = bakedTextureRef.current;
                     meshRef.current.material.map.needsUpdate = true;
                 }
             }
-    
+
             // Create a scene for export with the mesh
             const exportScene = new THREE.Scene();
-    
+
             // Clone the current mesh
             const exportMesh = meshRef.current.clone();
-    
+
             // Create a separate material instance for export with exact property matching
             exportMesh.material = new THREE.MeshStandardMaterial({
                 map: bakedTextureRef.current,
@@ -1355,28 +1358,28 @@ function ProjectedMaterialModelDemo() {
                 normalScale: meshRef.current.material.normalScale ? meshRef.current.material.normalScale.clone() : new THREE.Vector2(1, 1),
                 envMapIntensity: meshRef.current.material.envMapIntensity || 1.0
             });
-    
+
             // Set correct texture parameters for export
             if (exportMesh.material.map) {
                 exportMesh.material.map.encoding = THREE.sRGBEncoding;
-                
+
                 // For newer Three.js versions
                 if ('colorSpace' in exportMesh.material.map) {
                     exportMesh.material.map.colorSpace = 'srgb';
                 }
-                
+
                 exportMesh.material.map.minFilter = THREE.LinearMipmapLinearFilter;
                 exportMesh.material.map.magFilter = THREE.LinearFilter;
                 exportMesh.material.map.generateMipmaps = true;
                 exportMesh.material.map.anisotropy = 4;
                 exportMesh.material.map.needsUpdate = true;
             }
-            
+
             exportMesh.material.needsUpdate = true;
-    
+
             // Add to the export scene
             exportScene.add(exportMesh);
-    
+
             // Export options with explicit color space handling
             const options = {
                 binary: true,
@@ -1389,7 +1392,7 @@ function ProjectedMaterialModelDemo() {
                 truncateDrawRange: true,
                 animations: []
             };
-    
+
             // Do the export
             const exporter = new GLTFExporter();
             exporter.parse(
@@ -1405,7 +1408,7 @@ function ProjectedMaterialModelDemo() {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-    
+
                     setStatus('Model exported successfully with baked textures!');
                     setIsLoading(false);
                 },
@@ -1416,7 +1419,7 @@ function ProjectedMaterialModelDemo() {
                 },
                 options
             );
-    
+
         } catch (error) {
             console.error('Error in export process:', error);
             setStatus(`Export process failed: ${error.message}`);
@@ -1448,12 +1451,12 @@ function ProjectedMaterialModelDemo() {
                                     <UploadCloud className="h-4 w-4" />
                                     (1) Load GLB Model
                                 </Label>
-                                <Input 
-                                    type="file" 
-                                    id="glbInput" 
-                                    accept=".glb,.gltf" 
-                                    onChange={handleGlbLoad} 
-                                    disabled={isLoading} 
+                                <Input
+                                    type="file"
+                                    id="glbInput"
+                                    accept=".glb,.gltf"
+                                    onChange={handleGlbLoad}
+                                    disabled={isLoading}
                                     className="cursor-pointer"
                                 />
                             </div>
@@ -1486,13 +1489,13 @@ function ProjectedMaterialModelDemo() {
                                             <Sparkles className="h-4 w-4" />
                                             (3) AI Texture Settings
                                         </div>
-                                        
+
                                         <Tabs defaultValue="prompt" className="w-full">
                                             <TabsList className="grid w-full grid-cols-2">
                                                 <TabsTrigger value="prompt">Prompt</TabsTrigger>
                                                 <TabsTrigger value="params">Parameters</TabsTrigger>
                                             </TabsList>
-                                            
+
                                             <TabsContent value="prompt" className="space-y-3 pt-2">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="prompt" className="text-xs">Prompt:</Label>
@@ -1504,7 +1507,7 @@ function ProjectedMaterialModelDemo() {
                                                         className="min-h-[80px] text-xs"
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="space-y-2">
                                                     <Label htmlFor="negativePrompt" className="text-xs">Negative Prompt:</Label>
                                                     <Textarea
@@ -1516,12 +1519,12 @@ function ProjectedMaterialModelDemo() {
                                                     />
                                                 </div>
                                             </TabsContent>
-                                            
+
                                             <TabsContent value="params" className="space-y-3 pt-2">
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center">
                                                         <Label htmlFor="seed" className="text-xs">Seed:</Label>
-                                                        <Button 
+                                                        <Button
                                                             onClick={handleRandomizeSeed}
                                                             size="sm"
                                                             variant="ghost"
@@ -1538,7 +1541,7 @@ function ProjectedMaterialModelDemo() {
                                                         className="text-xs"
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center">
                                                         <Label htmlFor="resemblance" className="text-xs">Resemblance: {generationParams.resemblance.toFixed(2)}</Label>
@@ -1552,7 +1555,7 @@ function ProjectedMaterialModelDemo() {
                                                         onValueChange={(value) => updateParams('resemblance', value[0])}
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center">
                                                         <Label htmlFor="creativity" className="text-xs">Creativity: {generationParams.creativity.toFixed(2)}</Label>
@@ -1566,7 +1569,7 @@ function ProjectedMaterialModelDemo() {
                                                         onValueChange={(value) => updateParams('creativity', value[0])}
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center">
                                                         <Label htmlFor="sharpen" className="text-xs">Sharpen: {generationParams.sharpen.toFixed(2)}</Label>
@@ -1580,7 +1583,7 @@ function ProjectedMaterialModelDemo() {
                                                         onValueChange={(value) => updateParams('sharpen', value[0])}
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center">
                                                         <Label htmlFor="steps" className="text-xs">Steps: {generationParams.num_inference_steps}</Label>
@@ -1596,7 +1599,7 @@ function ProjectedMaterialModelDemo() {
                                                 </div>
                                             </TabsContent>
                                         </Tabs>
-                                        
+
                                         {/* Add Projection Button */}
                                         <Button
                                             onClick={handleAddAIProjection}
@@ -1607,12 +1610,12 @@ function ProjectedMaterialModelDemo() {
                                             Generate AI Projection
                                         </Button>
                                     </div>
-                                    
+
                                     {/* Projections List */}
                                     {projections.length > 0 && (
                                         <div className="space-y-2 border-t border-border pt-4 mt-4">
                                             <Label className="text-sm font-medium">Projections</Label>
-                                            
+
                                             <div className="max-h-40 overflow-y-auto rounded-md border border-border">
                                                 <div className="divide-y divide-border">
                                                     {projections.map((proj, index) => (
@@ -1645,14 +1648,14 @@ function ProjectedMaterialModelDemo() {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     {/* Active Projection Controls */}
                                     {activeProjectionIndex !== -1 && (
                                         <div className="space-y-3 border border-border rounded-md p-3 bg-muted/30">
                                             <div className="text-sm font-medium text-primary">
                                                 {projections[activeProjectionIndex]?.name || `Projection ${activeProjectionIndex + 1}`}
                                             </div>
-                                            
+
                                             {/* Apply Projection Button */}
                                             {!projections[activeProjectionIndex]?.isApplied && (
                                                 <Button
@@ -1664,7 +1667,7 @@ function ProjectedMaterialModelDemo() {
                                                     Apply Projection
                                                 </Button>
                                             )}
-                                            
+
                                             {/* Projection Details */}
                                             {projections[activeProjectionIndex]?.prompt && (
                                                 <div className="text-xs text-muted-foreground border-t border-border pt-2 mt-1">
@@ -1672,7 +1675,7 @@ function ProjectedMaterialModelDemo() {
                                                     <p className="line-clamp-3">{projections[activeProjectionIndex].prompt}</p>
                                                 </div>
                                             )}
-                                            
+
                                             {/* Opacity Control */}
                                             {projections[activeProjectionIndex]?.isApplied && !isBaked && (
                                                 <div className="space-y-2 border-t border-border pt-2 mt-1">
@@ -1685,7 +1688,7 @@ function ProjectedMaterialModelDemo() {
                                                         value={[projections[activeProjectionIndex]?.opacity || 1]}
                                                         onValueChange={(value) => handleAdjustProjectionOpacity(value[0])}
                                                     />
-                                                    
+
                                                     {/* Visibility Toggle */}
                                                     <Button
                                                         onClick={() => handleToggleProjectionVisibility(activeProjectionIndex)}
@@ -1701,7 +1704,7 @@ function ProjectedMaterialModelDemo() {
                                             )}
                                         </div>
                                     )}
-                                    
+
                                     {/* Bake and Export Buttons */}
                                     {projections.some(p => p.isApplied) && (
                                         <div className="space-y-2 border-t border-border pt-4 mt-4">
@@ -1774,7 +1777,7 @@ function ProjectedMaterialModelDemo() {
             <main className="flex-1 bg-muted/30 overflow-hidden relative">
                 {/* Canvas Container */}
                 <div ref={mountRef} className="absolute inset-0 h-full w-full" />
-                
+
                 {/* Loading Overlay */}
                 {isLoading && (
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
