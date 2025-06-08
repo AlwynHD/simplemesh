@@ -52,6 +52,7 @@ export async function GET(request: Request) {
                 stripeSession = await stripe.checkout.sessions.create({
                     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
+                    allow_promotion_codes: true, 
                     payment_method_types: ["card"],
                     mode: "subscription",
                     customer: userData.stripe_customer_id, // Reuse existing customer.
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
             stripeSession = await stripe.checkout.sessions.create({
                 success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
                 cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
+                allow_promotion_codes: true, 
                 payment_method_types: ["card"],
                 mode: "subscription",
                 customer_email: data.user.email ?? '',

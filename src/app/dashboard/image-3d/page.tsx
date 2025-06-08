@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useCreditStore } from '@/stores/creditStore'
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
 
-// UI Components
 import {
   Sidebar,
   SidebarContent,
@@ -17,14 +16,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import ModelViewer from "@/components/ModelViewer"
 
-// Icons
 import { Image, X, RefreshCw, Wand2, Loader, UploadCloud, Hash, Coins } from 'lucide-react'
 
-// Actions
 import { image3D, checkReplicateStatus } from "@/components/actions/featuresActions"
 
 export default function Image3D() {
-  // State
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -38,7 +34,6 @@ export default function Image3D() {
   const dropzoneRef = useRef<HTMLDivElement>(null)
   const setCredits = useCreditStore(state => state.setCredits)
 
-  // Example price - this would typically come from your API or config
   const featureCreditCost = 1
 
   const [predictionId, setPredictionId] = useState<string | null>(null)
@@ -53,7 +48,7 @@ export default function Image3D() {
         const minutes = Math.floor((elapsed / 1000 / 60) % 60);
 
         setElapsedTime(`${minutes}m ${seconds}s`);
-      }, 1000); // Update every second
+      }, 1000);
     }
 
     return () => {
@@ -61,7 +56,6 @@ export default function Image3D() {
     };
   }, [isLoading, startTime]);
 
-  // Add this polling effect
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
 
@@ -79,11 +73,9 @@ export default function Image3D() {
           if (result.status === 'succeeded') {
             clearInterval(intervalId!);
 
-            // Use the URL directly from Replicate!
             if (result.output?.model_file) {
               setModelUrl(result.output.model_file);
 
-              // Still generate a thumbnail
               if (modelId) {
                 generateAndUploadThumbnail(result.output.model_file, modelId);
               }
@@ -96,7 +88,7 @@ export default function Image3D() {
         } catch (err) {
           console.error('Error polling status:', err);
         }
-      }, 5000); // Check every 5 seconds
+      }, 5000);
     }
 
     return () => {
@@ -104,7 +96,6 @@ export default function Image3D() {
     };
   }, [predictionId, isLoading, modelId]);
 
-  // Set up drag and drop event listeners
   useEffect(() => {
     const dropzone = dropzoneRef.current
     if (!dropzone) return
@@ -183,7 +174,6 @@ export default function Image3D() {
 
 
 
-      // Convert image to base64
       const reader = new FileReader()
       reader.readAsDataURL(selectedImage)
 
@@ -211,7 +201,6 @@ export default function Image3D() {
             setCredits(result.updatedCredits)
           }
 
-          // Store the prediction ID and model ID for polling
           if (result.predictionId) {
             setPredictionId(result.predictionId)
           }
@@ -262,7 +251,6 @@ export default function Image3D() {
             <hr className="border-border" />
 
             <SidebarGroupContent className="p-4 space-y-6">
-              {/* Image Upload Section */}
               <div className="space-y-2">
                 <Label htmlFor="image" className="text-sm font-medium flex items-center gap-1.5">
                   <Image className="h-4 w-4" />
@@ -311,7 +299,6 @@ export default function Image3D() {
                 )}
               </div>
 
-              {/* Seed Section */}
               <div className="space-y-2">
                 <Label htmlFor="seed" className="text-sm font-medium flex items-center gap-1.5">
                   <Hash className="h-4 w-4" />
@@ -342,7 +329,6 @@ export default function Image3D() {
                 <p className="text-xs text-muted-foreground">Leave empty for random results</p>
               </div>
 
-              {/* Credit Pricing Section */}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -351,12 +337,8 @@ export default function Image3D() {
                   </div>
                   <span className="font-semibold text-amber-500">{featureCreditCost} credit</span>
                 </div>
-                {/* <p className="text-xs text-muted-foreground mt-1">
-                  This amount will be deducted from your account when you generate a model
-                </p> */}
               </div>
 
-              {/* Generate Button */}
               <Button
                 className="w-full h-10 mt-4"
                 size="lg"
@@ -376,7 +358,6 @@ export default function Image3D() {
                 )}
               </Button>
 
-              {/* Error Display */}
               {error && (
                 <div className="text-destructive bg-destructive/10 p-3 rounded-md text-sm">
                   {error}
@@ -387,11 +368,9 @@ export default function Image3D() {
         </SidebarContent>
       </Sidebar>
 
-      {/* Main Content Area */}
       <main className="flex-1 bg-muted/30 overflow-hidden relative">
         <ModelViewer modelUrl={modelUrl} />
 
-        {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="bg-card/40 p-8 rounded-xl shadow-lg text-center max-w-sm mx-auto border border-border">

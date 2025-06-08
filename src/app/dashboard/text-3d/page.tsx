@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useCreditStore } from '@/stores/creditStore'
 import { createThumbnailGenerator } from '@/utils/ThumbnailGenerator'
 
-// UI Components
 import {
   Sidebar,
   SidebarContent,
@@ -18,14 +17,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import ModelViewer from "@/components/ModelViewer"
 
-// Icons
 import { Hash, Loader, RefreshCw, Wand2, Coins } from 'lucide-react'
 
-// Actions
 import { text3D, checkReplicateStatus } from "@/components/actions/featuresActions"
 
 export default function Text3D() {
-  // State
   const [prompt, setPrompt] = useState<string>('')
   const [seed, setSeed] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +36,6 @@ export default function Text3D() {
   const setCredits = useCreditStore(state => state.setCredits)
   const featureCreditCost = 1
 
-  // Track elapsed time during generation with minutes and seconds
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -51,7 +46,7 @@ export default function Text3D() {
         const minutes = Math.floor((elapsed / 1000 / 60) % 60);
 
         setElapsedTime(`${minutes}m ${seconds}s`);
-      }, 1000); // Update every second
+      }, 1000);
     }
 
     return () => {
@@ -59,7 +54,6 @@ export default function Text3D() {
     };
   }, [isLoading, startTime]);
 
-  // Add polling effect for checking status
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
 
@@ -77,11 +71,9 @@ export default function Text3D() {
           if (result.status === 'succeeded') {
             clearInterval(intervalId!);
 
-            // Use the URL directly from Replicate
             if (result.output?.model_file) {
               setModelUrl(result.output.model_file);
 
-              // Generate a thumbnail
               if (modelId) {
                 generateAndUploadThumbnail(result.output.model_file, modelId);
               }
@@ -94,7 +86,7 @@ export default function Text3D() {
         } catch (err) {
           console.error('Error polling status:', err);
         }
-      }, 5000); // Check every 5 seconds
+      }, 5000);
     }
 
     return () => {
@@ -131,7 +123,6 @@ export default function Text3D() {
           setCredits(result.updatedCredits)
         }
 
-        // Store the prediction ID and model ID for polling
         if (result.predictionId) {
           setPredictionId(result.predictionId)
         }
@@ -177,7 +168,6 @@ export default function Text3D() {
             <hr className="border-border" />
 
             <SidebarGroupContent className="p-4 space-y-6">
-              {/* Prompt Section */}
               <div className="space-y-2">
                 <Label htmlFor="prompt" className="text-sm font-medium">
                   Prompt
@@ -195,7 +185,6 @@ export default function Text3D() {
                 </p>
               </div>
 
-              {/* Seed Section */}
               <div className="space-y-2">
                 <Label htmlFor="seed" className="text-sm font-medium flex items-center gap-1.5">
                   <Hash className="h-4 w-4" />
@@ -233,11 +222,7 @@ export default function Text3D() {
                   </div>
                   <span className="font-semibold text-amber-500">{featureCreditCost} credit</span>
                 </div>
-                {/* <p className="text-xs text-muted-foreground mt-1">
-                  This amount will be deducted from your account when you generate a model
-                </p> */}
               </div>
-              {/* Generate Button */}
               <Button
                 className="w-full h-10 mt-4"
                 size="lg"
@@ -257,7 +242,6 @@ export default function Text3D() {
                 )}
               </Button>
 
-              {/* Error Display */}
               {error && (
                 <div className="text-destructive bg-destructive/10 p-3 rounded-md text-sm">
                   {error}
@@ -268,11 +252,9 @@ export default function Text3D() {
         </SidebarContent>
       </Sidebar>
 
-      {/* Main Content Area */}
       <main className="flex-1 bg-muted/30 overflow-hidden relative">
         <ModelViewer modelUrl={modelUrl} />
 
-        {/* Loading Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="bg-card/40 p-8 rounded-xl shadow-lg text-center max-w-sm mx-auto border border-border">

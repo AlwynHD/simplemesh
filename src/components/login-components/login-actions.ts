@@ -8,13 +8,10 @@ import { createClientServer } from '@/utils/supabase/server'
 export async function reqOTP(formData: FormData) {
   const supabase = createClientServer()
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
   const email = formData.get('email') as string
   const { data, error } = await supabase.auth.signInWithOtp({
     email: email,
     options: {
-      // set this to false if you do not want the user to be automatically signed up
       shouldCreateUser: true,
     },
   })
@@ -32,8 +29,6 @@ export async function verifyotp(formData: FormData) {
   const email = formData.get('email') as string
   const otp = formData.get('otp') as string
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
   const { error, } = await supabase.auth.verifyOtp({
     email,
     token: otp,

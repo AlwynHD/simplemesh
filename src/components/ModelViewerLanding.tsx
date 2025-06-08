@@ -10,7 +10,6 @@ function Model({ url, enhanceContrast = false }: { url: string, enhanceContrast?
     if (enhanceContrast) {
       scene.traverse((child) => {
         if (child instanceof THREE.Mesh && child.material) {
-          // Increase brightness and contrast
           child.material.toneMapped = false;
           
           if (Array.isArray(child.material)) {
@@ -35,17 +34,14 @@ export default function ModelViewer({ modelPath }: { modelPath: string }) {
       <Canvas 
         camera={{ position: [0, 0, 2], fov: 45 }}
         gl={{ outputColorSpace: THREE.SRGBColorSpace }}
-        style={{ background: '#000' }} // Pure white background
+        style={{ background: '#000' }}
       >
-        {/* Increased ambient light for overall brightness */}
         <ambientLight intensity={1.5} />
         
-        {/* Multiple directional lights from different angles */}
         <directionalLight position={[10, 10, 5]} intensity={1.2} />
         <directionalLight position={[-10, -10, 5]} intensity={0.8} />
         <directionalLight position={[0, 5, -10]} intensity={0.6} />
         
-        {/* Hemisphere light for more natural illumination */}
         <hemisphereLight 
           color="#ffffff" 
           groundColor="#bbbbff" 

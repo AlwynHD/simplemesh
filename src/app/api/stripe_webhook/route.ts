@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js"; //use this for RLS BYPASS
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
     const body = await req.text();
@@ -29,19 +29,16 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         
-        // Ensure payment was successful
         if (session.payment_status === 'paid') {
             console.log('Payment was successful');
             
             const customerEmail = session.customer_details?.email;
             
-            // Initialize Supabase client with service key for RLS bypass
             const supabaseService = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.SUPABASE_SERVICE_KEY!
             );
             
-            // Check if user exists in purchases table
             const { data: existingUser, error } = await supabaseService
                 .from('purchases')
                 .select('*')
@@ -49,7 +46,6 @@ export async function POST(req: Request) {
                 .single();
             
             if (existingUser) {
-                // User exists, update their credits
                 await supabaseService
                     .from('purchases')
                     .update({ 
@@ -59,7 +55,6 @@ export async function POST(req: Request) {
                     
                 console.log(`Updated existing user: ${customerEmail} with 30 more credits`);
             } else {
-                // User doesn't exist, create a new record
                 await supabaseService
                     .from('purchases')
                     .insert([

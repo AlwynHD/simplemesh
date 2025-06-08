@@ -1,4 +1,3 @@
-// components/ModelTopology.tsx
 import { useEffect, useState } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { Card } from "@/components/ui/card";
@@ -24,7 +23,6 @@ export function ModelTopology({ url, visible = true }: ModelTopologyProps) {
   
   const { scene } = useGLTF(url);
   
-  // Extract topology information when the model loads
   useEffect(() => {
     if (!scene) return;
     
@@ -37,22 +35,18 @@ export function ModelTopology({ url, visible = true }: ModelTopologyProps) {
         const mesh = node as THREE.Mesh;
         const geometry = mesh.geometry as THREE.BufferGeometry;
         
-        // Get vertex count
         if (geometry.attributes.position) {
           totalVertices += geometry.attributes.position.count;
         }
         
-        // Get face/triangle count
         if (geometry.index) {
           totalTriangles += geometry.index.count / 3;
         } else if (geometry.attributes.position) {
-          // For non-indexed geometries
           totalTriangles += geometry.attributes.position.count / 3;
         }
       }
     });
     
-    // In Three.js, faces are typically triangles
     totalFaces = totalTriangles;
     
     setStats({

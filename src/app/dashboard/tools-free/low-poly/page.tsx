@@ -1,4 +1,3 @@
-// app/simplifier/page.tsx
 "use client";
 
 import React, { useState, useCallback, Suspense, useMemo, useRef, useEffect } from 'react';
@@ -7,11 +6,9 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import * as st from 'simplify-triangles';
 import * as THREE from 'three';
 
-// R3F imports
 import { Canvas, useFrame } from '@react-three/fiber';
 import { CameraControls, Html, Center, Grid } from '@react-three/drei';
 
-// Shadcn components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -22,19 +19,15 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Icons
 import {
   FileUp, FileDown, Eye, Download, Info, CheckCircle, AlertTriangle,
   Loader, Maximize, X, Square, Layers3, Settings, Rabbit, ShieldCheck, Trash2, RotateCcw
 } from "lucide-react";
 
 
-// --- Type definitions ---
 type Vertex = [number, number, number];
 type Triangle = [Vertex, Vertex, Vertex];
 
-// --- Helper Functions ---
-// [Geometry conversion, Bounds calculation functions remain the same]
 function geometryToTriangles(geometry: THREE.BufferGeometry): Triangle[] {
   const positionAttribute = geometry.getAttribute('position');
   if (!positionAttribute) return [];
@@ -125,7 +118,7 @@ function trianglesToGeometry(triangles: Triangle[]): THREE.BufferGeometry {
   }
 
   geometry.setAttribute('position', new THREE.BufferAttribute(finalPositions, 3));
-  geometry.computeVertexNormals(); // Normals needed for solid shading
+  geometry.computeVertexNormals();
 
   return geometry;
 }
@@ -176,25 +169,23 @@ function calculateBounds(triangles: Triangle[]): {
 }
 
 
-// --- Grid Component ---
 const GridFloor = () => {
   return (
     <Grid
-      position={[0, -0.01, 0]} // Slightly below origin
-      args={[100, 100]} // Extents
+      position={[0, -0.01, 0]}
+      args={[100, 100]}
       cellSize={1}
       cellThickness={0.5}
-      cellColor="#6f6f6f" // Muted grid lines
+      cellColor="#6f6f6f"
       sectionSize={10}
       sectionThickness={1}
-      sectionColor="#f59e0b" // Primary color for sections (e.g., amber)
+      sectionColor="#f59e0b"
       fadeDistance={100}
       infiniteGrid
     />
   );
 };
 
-// --- Model Component ---
 interface ModelProps {
   triangles: Triangle[] | null;
   showWireframe: boolean;
@@ -227,10 +218,9 @@ const Model = React.forwardRef<THREE.Mesh, ModelProps>(({ triangles, showWirefra
         return null;
     }, [triangles, normalizeGeometry]);
 
-    // Material for the solid mesh (game-dev friendly look)
     const solidMaterial = useMemo(() => {
         return new THREE.MeshStandardMaterial({
-            color: "#e2e8f0", // Light gray/off-white
+            color: "#e2e8f0",
             wireframe: false,
             side: THREE.DoubleSide,
             flatShading: false,
@@ -239,10 +229,9 @@ const Model = React.forwardRef<THREE.Mesh, ModelProps>(({ triangles, showWirefra
         });
     }, []);
 
-    // Material for the wireframe overlay
     const wireframeMaterial = useMemo(() => {
         return new THREE.MeshBasicMaterial({
-            color: "#0f172a", // Dark contrast color (slate-900)
+            color: "#0f172a",
             wireframe: true,
             depthTest: true,
             polygonOffset: true,
@@ -278,7 +267,6 @@ const Model = React.forwardRef<THREE.Mesh, ModelProps>(({ triangles, showWirefra
 });
 Model.displayName = 'Model';
 
-// --- Camera Control ---
 interface CameraProps {
   modelRef: React.RefObject<THREE.Mesh>;
   autoFit: boolean;
@@ -331,7 +319,6 @@ const CameraControl: React.FC<CameraProps> = ({ modelRef, autoFit, originalTrian
 };
 
 
-// --- 3D Scene ---
 interface SceneProps {
   triangles: Triangle[] | null;
   originalTriangles: Triangle[] | null;
@@ -396,7 +383,6 @@ const Scene: React.FC<SceneProps> = ({ triangles, originalTriangles, isProcessin
   );
 };
 
-// --- FileDropZone Component ---
 const FileDropZone = ({
   isDragging,
   onDragOver,
@@ -443,7 +429,6 @@ const FileDropZone = ({
   </div>
 );
 
-// --- StatsDisplay Component ---
 const StatsDisplay = ({ originalCount, currentCount, reductionPercent }: {
   originalCount: number;
   currentCount: number;
@@ -480,9 +465,7 @@ const StatsDisplay = ({ originalCount, currentCount, reductionPercent }: {
   </div>
 );
 
-// Main application component
 export default function SimplifierPage(): JSX.Element {
-  // --- Core State ---
   const [originalTriangles, setOriginalTriangles] = useState<Triangle[] | null>(null);
   const [currentTriangles, setCurrentTriangles] = useState<Triangle[] | null>(null);
   const [simplificationLevel, setSimplificationLevel] = useState<number>(0.5);
@@ -496,7 +479,6 @@ export default function SimplifierPage(): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modelRef = useRef<THREE.Mesh>(null);
 
-  // --- Derived Values ---
   const originalCount = originalTriangles?.length || 0;
   const currentCount = currentTriangles?.length || 0;
   const reductionPercent = useMemo(() => {
@@ -507,7 +489,6 @@ export default function SimplifierPage(): JSX.Element {
   const isModelLoaded = !!originalTriangles && !!currentTriangles;
   const isBusy = isLoading || isProcessing;
 
-  // --- Load file ---
   const loadFile = useCallback((file: File) => {
     if (!file) {
         setError('No file selected.');
@@ -564,7 +545,6 @@ export default function SimplifierPage(): JSX.Element {
     reader.readAsArrayBuffer(file);
   }, []);
 
-  // --- File handling ---
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -573,7 +553,6 @@ export default function SimplifierPage(): JSX.Element {
     if (event.target) event.target.value = '';
   }, [loadFile]);
 
-  // --- Simplify model ---
   const handleSimplify = useCallback(() => {
     if (!originalTriangles || originalTriangles.length === 0) {
       setError("Load a model before simplifying.");
@@ -601,7 +580,6 @@ export default function SimplifierPage(): JSX.Element {
     }, 10);
   }, [originalTriangles, simplificationLevel]);
 
-  // --- Reset model view ---
   const resetModel = useCallback(() => {
     if (!originalTriangles) return;
     setCurrentTriangles(originalTriangles);
@@ -609,7 +587,6 @@ export default function SimplifierPage(): JSX.Element {
     setError(null);
   }, [originalTriangles]);
 
-  // --- Download Model ---
   const handleDownload = useCallback(() => {
     if (!currentTriangles || currentTriangles.length === 0) {
       setError("No model data to download.");
@@ -644,7 +621,6 @@ export default function SimplifierPage(): JSX.Element {
     }
   }, [currentTriangles, originalTriangles, fileName, currentCount]);
 
-  // --- Drag and Drop ---
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault(); event.stopPropagation();
     if (!isBusy) setIsDragging(true);
@@ -669,11 +645,8 @@ export default function SimplifierPage(): JSX.Element {
     if (!isBusy && fileInputRef.current) fileInputRef.current.click();
   }, [isBusy]);
 
-  // --- UI ---
-  // Use h-screen and flex layout to constrain height
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background p-4 sm:p-6">
-      {/* Header */}
       <div className="mb-4 text-center flex-shrink-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-primary">Low Poly Mesh Simplifier</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto text-xs sm:text-sm mt-1">
@@ -684,12 +657,9 @@ export default function SimplifierPage(): JSX.Element {
         </p>
       </div>
 
-      {/* Main Content Grid - Use flex-grow to fill remaining space */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-grow min-h-0"> {/* min-h-0 prevents flex item from overflowing */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-grow min-h-0">
 
-        {/* Controls Panel (Left Column) */}
         <div className="lg:col-span-1 space-y-4 flex flex-col min-h-0">
-          {/* File Upload Card - flex-shrink-0 prevents it from shrinking */}
           <Card className="shadow-sm border-border flex-shrink-0">
             <CardHeader className="py-3 px-4 bg-secondary/30 border-b border-border">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -708,19 +678,16 @@ export default function SimplifierPage(): JSX.Element {
             </CardContent>
           </Card>
 
-          {/* Simplification Controls & Stats Card (Conditional) - flex-grow takes remaining space */}
-          <div className="flex-grow flex flex-col min-h-0"> {/* Container for conditional rendering that grows */}
+          <div className="flex-grow flex flex-col min-h-0">
               {isModelLoaded ? (
-                <Card className="flex-grow flex flex-col shadow-sm border-border min-h-0"> {/* Card takes full height */}
+                <Card className="flex-grow flex flex-col shadow-sm border-border min-h-0">
                   <CardHeader className="py-3 px-4 bg-secondary/30 border-b border-border flex-shrink-0">
                     <CardTitle className="flex items-center gap-2 text-base">
                     <Settings className="h-4 w-4 text-primary" /> Optimization
                     </CardTitle>
                   </CardHeader>
-                  {/* Make CardContent scrollable if needed */}
                   <CardContent className="p-4 flex-grow flex flex-col justify-between overflow-y-auto">
                     <div className="space-y-4">
-                      {/* Simplification Slider */}
                       <div className="space-y-1.5">
                           <div className="flex justify-between items-center">
                             <Label htmlFor="simplification" className="font-medium text-xs flex items-center gap-1">
@@ -736,13 +703,11 @@ export default function SimplifierPage(): JSX.Element {
                             onValueChange={(value) => setSimplificationLevel(value[0])} disabled={isBusy} aria-label="Simplification level" />
                       </div>
 
-                      {/* Wireframe Toggle */}
                       <div className="flex items-center space-x-2 pt-2 border-t border-border">
                         <Switch id="wireframe-toggle" checked={showWireframe} onCheckedChange={setShowWireframe} disabled={!isModelLoaded || isBusy} aria-label="Toggle wireframe" />
                         <Label htmlFor="wireframe-toggle" className="text-xs cursor-pointer select-none">Show Wireframe</Label>
                       </div>
 
-                      {/* Action Buttons */}
                       <div className="grid grid-cols-2 gap-2 pt-2">
                           <Button size="sm" variant="default" onClick={handleSimplify} disabled={isBusy || !isModelLoaded} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                           {isProcessing ? (<> <Loader className="mr-1 h-3.5 w-3.5 animate-spin" /> Simplifying... </>) : (<> <Rabbit className="mr-1 h-3.5 w-3.5" /> Simplify </>)}
@@ -751,7 +716,6 @@ export default function SimplifierPage(): JSX.Element {
                            <RotateCcw className="mr-1 h-3.5 w-3.5" /> Reset
                           </Button>
                       </div>
-                      {/* Download Button */}
                       <div className="pt-2 border-t border-border">
                            <Button size="sm" variant="secondary" onClick={handleDownload} disabled={isBusy || !isModelLoaded} className="w-full">
                               <Download className="mr-1 h-3.5 w-3.5" /> Download Model
@@ -759,12 +723,10 @@ export default function SimplifierPage(): JSX.Element {
                       </div>
                     </div>
 
-                    {/* Statistics Display */}
                     <StatsDisplay originalCount={originalCount} currentCount={currentCount} reductionPercent={reductionPercent} />
                   </CardContent>
                 </Card>
               ) : isLoading ? (
-                  // Loading placeholder
                   <Card className="flex-grow flex items-center justify-center border-dashed border-border bg-secondary/30">
                     <CardContent className="text-center text-muted-foreground p-4">
                         <Loader className="h-6 w-6 mx-auto mb-2 text-primary animate-spin" />
@@ -772,7 +734,6 @@ export default function SimplifierPage(): JSX.Element {
                     </CardContent>
                   </Card>
               ) : (
-                 // Placeholder when no model loaded
                 <Card className="flex-grow flex items-center justify-center border-dashed border-border bg-secondary/30">
                     <CardContent className="text-center text-muted-foreground p-4">
                         <Settings className="h-6 w-6 mx-auto mb-2 text-muted-foreground/50" />
@@ -783,7 +744,6 @@ export default function SimplifierPage(): JSX.Element {
               )}
           </div>
 
-          {/* Error Display */}
           {error && (
             <Alert variant="destructive" className="flex-shrink-0">
                 <AlertTriangle className="h-4 w-4" />
@@ -792,14 +752,12 @@ export default function SimplifierPage(): JSX.Element {
           )}
         </div>
 
-        {/* 3D Viewer (Right Column) - Use h-full */}
         <Card className="lg:col-span-3 overflow-hidden flex flex-col shadow-inner border-border bg-card h-full">
              <CardHeader className="py-3 px-4 bg-secondary/30 border-b border-border flex-shrink-0">
                  <CardTitle className="flex items-center gap-2 text-base">
                     <Eye className="h-4 w-4 text-primary" /> Model Preview
                  </CardTitle>
              </CardHeader>
-            {/* Make CardContent take remaining space */}
             <CardContent className="p-0 relative flex-grow min-h-0 bg-gradient-to-br from-muted/10 via-card to-muted/20">
                 {isModelLoaded && currentTriangles ? (
                 <Scene

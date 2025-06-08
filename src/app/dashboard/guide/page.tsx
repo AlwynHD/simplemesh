@@ -35,7 +35,6 @@ export default function GuidePage() {
         </p>
       </motion.div>
 
-      {/* Guide Categories - Centered 3 items */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -86,7 +85,6 @@ export default function GuidePage() {
         </div>
       </motion.div>
 
-      {/* Content Types - Centered 2 items */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

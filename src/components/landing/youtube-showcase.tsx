@@ -1,11 +1,9 @@
-// components/landing/youtube-showcase.tsx
 import React from 'react';
 import { motion } from "framer-motion";
 
 const YoutubeShowcase = () => {
     return (
         <section className="py-10 md:py-12 relative overflow-hidden border-t border-b border-[hsl(var(--border))]/30">
-            {/* Background pattern */}
             <div className="absolute inset-0 opacity-5">
                 <div className="absolute inset-0" style={{
                     backgroundImage: 'radial-gradient(circle, hsl(var(--muted-foreground)) 1px, transparent 1px)',
@@ -42,11 +40,9 @@ const YoutubeShowcase = () => {
                     viewport={{ once: true }}
                     className="relative mx-auto max-w-4xl rounded-2xl overflow-hidden shadow-xl border border-[hsl(var(--border))]/30 bg-[hsl(var(--secondary))]/5 backdrop-blur-sm"
                 >
-                    {/* Decorative elements */}
                     <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-[hsl(var(--primary))]/20 to-transparent rounded-full blur-xl"></div>
                     <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-[hsl(var(--accent))]/20 to-transparent rounded-full blur-xl"></div>
 
-                    {/* YouTube video container with 16:9 aspect ratio */}
                     <div className="relative pt-[56.25%]">
                         <iframe
                             className="absolute inset-0 w-full h-full"
@@ -58,7 +54,6 @@ const YoutubeShowcase = () => {
                         ></iframe>
                     </div>
 
-                    {/* Video controls overlay */}
                     <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
                 </motion.div>
 

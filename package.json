@@ -45,6 +45,7 @@
     "aws-sdk": "^2.1692.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dat.gui": "^0.7.9",
     "framer-motion": "^12.0.5",
     "immer": "^10.1.1",
     "jszip": "^3.10.1",
@@ -58,7 +59,7 @@
     "next-themes": "^0.3.0",
     "postprocessing": "^6.37.2",
     "puppeteer": "^24.3.0",
-    "react": "^18",
+    "react": "^18.3.1",
     "react-colorful": "^5.6.1",
     "react-dom": "^18",
     "react-dropzone": "^14.3.8",
@@ -73,8 +74,10 @@
     "tailwind-merge": "^2.5.3",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.175.0",
+    "three-projected-material": "^2.2.2",
     "uuid": "^11.1.0",
     "vaul": "^1.0.0",
+    "xatlas-three": "^0.2.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

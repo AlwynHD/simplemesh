@@ -1,4 +1,3 @@
-// app/api/webhooks/replicate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
@@ -20,12 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false });
     }
     
-    // Process completed prediction
     if (body.output?.model_file) {
-      // Download file from Replicate
       const fileBuffer = await downloadFile(body.output.model_file);
       
-      // Upload to S3
       const fileKey = `users/${userId}/models/${modelId}.glb`;
       const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME!,

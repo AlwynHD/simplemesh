@@ -26,10 +26,8 @@ const TestimonialSection = () => {
 
   return (
     <section className="py-24 bg-background relative overflow-hidden">
-      {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5 bg-[radial-gradient(hsl(28,5%,60%)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
       
-      {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-primary/5 to-transparent rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
       
@@ -61,7 +59,6 @@ const TestimonialSection = () => {
               }}
               className="bg-gradient-to-b from-card to-card/90 rounded-[1rem] p-8 border border-border/50 flex flex-col h-full relative group"
             >
-              {/* Quote icon */}
               <div className="absolute -top-4 -left-2 text-primary/20 opacity-70 group-hover:opacity-100 transition-opacity">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.3,6.7H8.7c-1.6,0-2.9,1.3-2.9,2.9v2.9H2.9C1.3,12.4,0,13.7,0,15.3v2.9C0,19.7,1.3,21,2.9,21h5.8c1.6,0,2.9-1.3,2.9-2.9V9.6C11.6,8,10.3,6.7,8.7,6.7h2.6V3C11.3,3,11.3,6.7,11.3,6.7z M21.1,12.4h-2.9V9.6c0-1.6-1.3-2.9-2.9-2.9h-2.9V3h2.9c1.6,0,2.9,1.3,2.9,2.9v6.5h2.9c1.6,0,2.9,1.3,2.9,2.9v2.9c0,1.6-1.3,2.9-2.9,2.9h-5.8c-1.6,0-2.9-1.3-2.9-2.9v-5.8c0-1.6,1.3-2.9,2.9-2.9h5.8V12.4z"/>
@@ -88,7 +85,7 @@ const TestimonialSection = () => {
                     width={56}
                     height={56}
                     className="rounded-full border-2 border-primary/20"
-                    unoptimized // For external images
+                    unoptimized
                   />
                   <div className="absolute inset-0 rounded-full border-2 border-primary/40 scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
                 </div>
@@ -101,31 +98,6 @@ const TestimonialSection = () => {
           ))}
         </div>
 
-        {/* <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-16"
-        >
-          <a
-            href="https://www.trustpilot.com/review/simplemesh.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center px-6 py-3 rounded-full bg-secondary border border-border hover:bg-secondary/80 transition-colors group"
-          >
-            <span className="mr-2">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-[#00b67a]">
-                <path d="M12 0l2.44 7.5h7.56l-6.12 4.47 2.44 7.53-6.32-4.6-6.32 4.6 2.44-7.53-6.12-4.47h7.56z"/>
-              </svg>
-            </span>
-            <span className="text-foreground font-medium mr-1">Read all our reviews on</span> 
-            <span className="text-primary font-bold">Trustpilot</span>
-            <svg className="ml-2 w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </a>
-        </motion.div> */}
       </div>
       
 

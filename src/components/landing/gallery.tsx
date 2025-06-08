@@ -3,14 +3,12 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import ModelViewerLanding from "@/components/ModelViewerLanding";
 
-// Define interface for gallery items
 interface GalleryItem {
   id: number;
   title: string;
   imageUrl: string;
 }
 
-// Simplified gallery data - just a few curated models
 const galleryItems: GalleryItem[] = [
   { id: 1, title: "Stylised Tree", imageUrl: "/treeModel.jpg" },
   { id: 2, title: "A Rocket on Launch", imageUrl: "/rocketModel.jpg" },
@@ -24,7 +22,6 @@ const GallerySection: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<GalleryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Convert JPG path to GLB path
   const getModelPath = (imagePath: string) => {
     return imagePath.replace(/\.(jpg|jpeg|png)$/i, '.glb');
   };
@@ -50,7 +47,6 @@ const GallerySection: React.FC = () => {
           </p>
         </div>
 
-        {/* Simplified Gallery Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {galleryItems.map((item) => (
             <motion.div
@@ -68,14 +64,11 @@ const GallerySection: React.FC = () => {
                   className="object-cover transition-all duration-300 group-hover:scale-105"
                 />
                 
-                {/* Subtle overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                {/* Card content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-100">
                   <h3 className="text-white font-medium mb-2 group-hover:mb-3 transition-all">{item.title}</h3>
                   
-                  {/* More subtle view in 3D button */}
                   <button
                     onClick={() => openModal(item)}
                     className="opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 w-auto self-start text-sm bg-background/30 backdrop-blur-sm hover:bg-background/50 text-white font-medium py-1.5 px-3 rounded-md flex items-center gap-2"
@@ -95,7 +88,6 @@ const GallerySection: React.FC = () => {
         </div>
       </div>
 
-      {/* Simplified Modal */}
       <AnimatePresence>
         {isModalOpen && selectedModel && (
           <motion.div
@@ -114,7 +106,6 @@ const GallerySection: React.FC = () => {
               className="relative bg-card rounded-xl overflow-hidden max-w-4xl w-full max-h-[90vh] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Simple close button */}
               <button 
                 onClick={closeModal}
                 className="absolute top-3 right-3 z-10 bg-background/50 hover:bg-background/80 backdrop-blur-sm rounded-full p-1.5 text-foreground transition-all"
@@ -126,12 +117,10 @@ const GallerySection: React.FC = () => {
                 </svg>
               </button>
               
-              {/* 3D Model viewer */}
               <div className="h-[60vh] w-full bg-black/10">
                 <ModelViewerLanding modelPath={getModelPath(selectedModel.imageUrl)} />
               </div>
               
-              {/* Simplified info panel - no download button */}
               <div className="p-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-medium">{selectedModel.title}</h2>
