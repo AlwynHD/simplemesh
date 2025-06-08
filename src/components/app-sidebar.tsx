@@ -9,7 +9,8 @@ import {
   Grid,
   BookText,
   Sparkles,
-  LayoutDashboard
+  LayoutDashboard,
+  Paintbrush
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -56,6 +57,11 @@ const data = {
       title: "Text To 3D",
       url: "/dashboard/text-3d",
       icon: Quote,
+    },
+    {
+      title: "Retexture",
+      url: "/dashboard/retexture",
+      icon: Paintbrush,
     },
     {
       title: "Free Tools",
