@@ -7,14 +7,12 @@ import { motion } from 'framer-motion';
 
 const FeaturesGrid = () => {
   const features = [
-    // Available core features first
     { icon: <FiBox />, title: "3D Assets in Seconds" },
     { icon: <HiOutlineCube />, title: "3D Library" },
     { icon: <BiPalette />, title: "HQ Materials" },
     { icon: <HiOutlineLockClosed />, title: "Private by Default" },
     { icon: <FiRefreshCw />, title: "Weekly Updates" },
     
-    // Coming soon features
     { icon: <HiOutlineAdjustments />, title: "Auto LODs", comingSoon: true },
     { icon: <IoGridOutline />, title: "Quad Remesh", comingSoon: true },
     { icon: <FiFileText />, title: "Export 3D Formats", comingSoon: true },
@@ -26,13 +24,11 @@ const FeaturesGrid = () => {
 
   return (
     <section className="py-16 bg-[hsl(0,0%,9%)] relative overflow-hidden" id="tools">
-      {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(hsl(28,5%,60%)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-[hsl(28,96.4%,67.5%)]/5 to-[hsl(28,30%,10%)]/5"></div>
       </div>
       
-      {/* Floating particles effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(15)].map((_, i) => (
           <div 
@@ -101,13 +97,11 @@ const FeaturesGrid = () => {
                 )}
               </div>
               
-              {/* Glow effect on hover */}
               <div className={`absolute -inset-px ${feature.comingSoon ? 
                 'bg-gradient-to-r from-[hsl(240,80%,70%)]/60 to-[hsl(220,80%,65%)]/60' : 
                 'bg-gradient-to-r from-[hsl(28,96.4%,67.5%)]/60 to-[hsl(28,80%,55%)]/60'} opacity-0 
                 group-hover:opacity-100 blur-xl transition-all duration-500 -z-10`}></div>
                 
-              {/* Radial gradient on hover */}
               <div className="absolute inset-0 opacity-0 
                 group-hover:opacity-100 transition-opacity duration-300 -z-10"
                 style={{

@@ -18,7 +18,6 @@ export async function imageUpscaler(input: {
     try {
       const supabase = createClientServer();
       
-      // Check authentication
       const { data, error: authError } = await supabase.auth.getUser();
       if (authError || !data?.user) {
         return { error: 'User not authenticated' };
@@ -28,7 +27,6 @@ export async function imageUpscaler(input: {
       let pngImage: string;
       try {
         pngBuffer = await convertImageToPng(input.image);
-        // Convert buffer to base64 string for API consumption
         pngImage = `data:image/png;base64,${pngBuffer.toString('base64')}`;
       } catch (conversionError) {
         console.error('Error converting image to PNG:', conversionError);
@@ -40,7 +38,6 @@ export async function imageUpscaler(input: {
         useFileOutput: false,
       });
   
-      // Set default values for optional parameters
       const seed = input.seed !== undefined ? input.seed : 1337;
       const resemblance = input.resemblance !== undefined ? input.resemblance : 0.6;
       const prompt = input.prompt || "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>";
@@ -49,7 +46,6 @@ export async function imageUpscaler(input: {
       const creativity = input.creativity !== undefined ? input.creativity : 0.35;
       const num_inference_steps = input.num_inference_steps !== undefined ? input.num_inference_steps : 18;
       
-      // Build the input object for the Clarity Upscaler
       const upscalerInput: any = {
         seed: seed,
         image: pngImage,
@@ -74,28 +70,23 @@ export async function imageUpscaler(input: {
         downscaling_resolution: 768
       };
       
-      // Add mask if provided
       if (input.mask) {
         upscalerInput.mask = input.mask;
       }
   
-      // Run the model
       const output = await replicate.run(
         "philz1337x/clarity-upscaler:dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e",
         { input: upscalerInput }
       );
       
-      // Handle different possible output formats
       let imageUrl: string;
       
       if (Array.isArray(output) && output.length > 0) {
         const firstItem = output[0];
         
-        // If output is an array of strings
         if (typeof firstItem === 'string') {
           imageUrl = firstItem;
         }
-        // If output is an array of objects with url property
         else if (typeof firstItem === 'object' && firstItem !== null && 'url' in firstItem) {
           if (typeof firstItem.url === 'string') {
             imageUrl = firstItem.url;

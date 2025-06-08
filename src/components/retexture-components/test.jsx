@@ -7,7 +7,6 @@ import { UVUnwrapper } from 'xatlas-three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 function SimpleProjectionTester() {
-    // Refs
     const mountRef = useRef(null);
     const sceneRef = useRef(new THREE.Scene());
     const cameraRef = useRef();
@@ -19,7 +18,6 @@ function SimpleProjectionTester() {
     const projectionOverlayRef = useRef(null);
     const projectionMaterialRef = useRef(null);
 
-    // State
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState('Load a GLB model to start.');
     const [modelLoaded, setModelLoaded] = useState(false);
@@ -29,19 +27,16 @@ function SimpleProjectionTester() {
     const [cameraSnapshot, setCameraSnapshot] = useState(null);
     const [unwrapReady, setUnwrapReady] = useState(false);
 
-    // Initialize xatlas unwrapper
     useEffect(() => {
         const initUnwrapper = async () => {
             try {
                 setStatus('Initializing UV unwrapper...');
                 setIsLoading(true);
 
-                // Create unwrapper instance
                 unwrapperRef.current = new UVUnwrapper({
                     BufferAttribute: THREE.BufferAttribute
                 });
 
-                // Configure unwrapper options
                 unwrapperRef.current.chartOptions = {
                     fixWinding: false,
                     maxBoundaryLength: 0,
@@ -69,7 +64,6 @@ function SimpleProjectionTester() {
                     texelsPerUnit: 0
                 };
 
-                // Load the xatlas library
                 await unwrapperRef.current.loadLibrary(
                     (mode, progress) => {
                         setStatus(`Loading xatlas: ${mode} - ${Math.floor(progress * 100)}%`);
@@ -95,21 +89,18 @@ function SimpleProjectionTester() {
         };
     }, [textureSize]);
 
-    // Scene setup effect
     useEffect(() => {
         if (!mountRef.current) return;
         
         const currentMount = mountRef.current;
         const scene = sceneRef.current;
         
-        // Renderer
         rendererRef.current = new THREE.WebGLRenderer({ antialias: true });
         rendererRef.current.setSize(currentMount.clientWidth, currentMount.clientHeight);
         rendererRef.current.setPixelRatio(window.devicePixelRatio);
         rendererRef.current.shadowMap.enabled = true;
         currentMount.appendChild(rendererRef.current.domElement);
         
-        // Camera
         cameraRef.current = new THREE.PerspectiveCamera(
             50, 
             currentMount.clientWidth / currentMount.clientHeight, 
@@ -119,12 +110,10 @@ function SimpleProjectionTester() {
         cameraRef.current.position.set(0, 1.5, 5);
         scene.add(cameraRef.current);
         
-        // Controls
         orbitControlsRef.current = new OrbitControls(cameraRef.current, rendererRef.current.domElement);
         orbitControlsRef.current.enableDamping = true;
         orbitControlsRef.current.target.set(0, 0, 0);
         
-        // Lights
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
         
@@ -133,14 +122,11 @@ function SimpleProjectionTester() {
         directionalLight.castShadow = true;
         scene.add(directionalLight);
         
-        // Grid
         const grid = new THREE.GridHelper(10, 10, 0x888888, 0x444444);
         scene.add(grid);
         
-        // Background
         scene.background = new THREE.Color(0x333333);
         
-        // Resize handler
         const handleResize = () => {
             if (!mountRef.current || !rendererRef.current || !cameraRef.current) return;
             
@@ -154,7 +140,6 @@ function SimpleProjectionTester() {
         
         window.addEventListener('resize', handleResize);
         
-        // Animation loop
         const animate = () => {
             requestRef.current = requestAnimationFrame(animate);
             orbitControlsRef.current.update();
@@ -177,18 +162,15 @@ function SimpleProjectionTester() {
         };
     }, []);
 
-    // Load GLB model
     const handleGlbLoad = useCallback((event) => {
         const file = event.target.files?.[0];
         if (!file) return;
         
-        // Reset state
         setModelLoaded(false);
         setUvUnwrapped(false);
         setProjectionApplied(false);
         setCameraSnapshot(null);
         
-        // Clean up previous model
         if (meshRef.current && sceneRef.current) {
             sceneRef.current.remove(meshRef.current);
             meshRef.current.geometry?.dispose();
@@ -196,7 +178,6 @@ function SimpleProjectionTester() {
             meshRef.current = null;
         }
         
-        // Clean up projection overlay
         if (projectionOverlayRef.current && meshRef.current) {
             meshRef.current.remove(projectionOverlayRef.current);
             projectionOverlayRef.current.geometry?.dispose();
@@ -229,7 +210,6 @@ function SimpleProjectionTester() {
                             foundMaterial = child.material.clone();
                         }
                         
-                        // Apply world transform to geometry
                         child.updateMatrixWorld(true);
                         foundGeometry.applyMatrix4(child.matrixWorld);
                         
@@ -240,7 +220,6 @@ function SimpleProjectionTester() {
                 });
                 
                 if (foundGeometry) {
-                    // Create mesh with the loaded geometry
                     const material = foundMaterial || new THREE.MeshStandardMaterial({
                         color: 0xcccccc,
                         roughness: 0.7
@@ -251,7 +230,6 @@ function SimpleProjectionTester() {
                     meshRef.current.castShadow = true;
                     meshRef.current.receiveShadow = true;
                     
-                    // Add mesh to scene
                     sceneRef.current.add(meshRef.current);
                     
                     setModelLoaded(true);
@@ -277,7 +255,6 @@ function SimpleProjectionTester() {
         event.target.value = '';
     }, []);
 
-    // Unwrap UVs
     const handleUnwrapUVs = useCallback(async () => {
         if (!meshRef.current || !unwrapperRef.current || !unwrapReady) {
             setStatus('Unable to unwrap UVs: Mesh or unwrapper not ready.');
@@ -293,15 +270,12 @@ function SimpleProjectionTester() {
             const originalMaterial = meshRef.current.material;
             const originalUVs = geometry.attributes.uv ? geometry.attributes.uv.clone() : null;
             
-            // Unwrap the geometry
             const atlas = await unwrapperRef.current.packAtlas([indexedGeometry]);
             
             if (atlas && atlas.geometries && atlas.geometries[0]) {
-                // Apply the unwrapped geometry back to the mesh
                 meshRef.current.geometry = atlas.geometries[0];
                 meshRef.current.material = originalMaterial;
                 
-                // Store original UVs in uv2 if they existed
                 if (originalUVs) {
                     meshRef.current.geometry.setAttribute('uv2', originalUVs);
                 }
@@ -320,7 +294,6 @@ function SimpleProjectionTester() {
         }
     }, [unwrapReady]);
 
-    // Take snapshot
     const handleTakeSnapshot = useCallback(() => {
         if (!meshRef.current || !cameraRef.current) {
             setStatus('Cannot take snapshot: Mesh or camera not ready.');
@@ -328,7 +301,6 @@ function SimpleProjectionTester() {
         }
         
         try {
-            // Capture camera state
             const cam = cameraRef.current;
             cam.updateMatrixWorld();
             
@@ -350,7 +322,6 @@ function SimpleProjectionTester() {
         }
     }, []);
 
-    // Handle texture upload
     const handleTextureUpload = useCallback((event) => {
         const file = event.target.files?.[0];
         if (!file || !cameraSnapshot || !meshRef.current) {
@@ -358,7 +329,6 @@ function SimpleProjectionTester() {
             return;
         }
         
-        // Clean up existing projection
         if (projectionOverlayRef.current && meshRef.current) {
             meshRef.current.remove(projectionOverlayRef.current);
             projectionOverlayRef.current.geometry?.dispose();
@@ -400,7 +370,6 @@ function SimpleProjectionTester() {
         event.target.value = '';
     }, [cameraSnapshot]);
 
-    // Apply projection
     const applyProjection = useCallback((texture) => {
         if (!meshRef.current || !cameraSnapshot) {
             setStatus('Cannot apply projection: Missing model or camera snapshot.');
@@ -409,7 +378,6 @@ function SimpleProjectionTester() {
         }
         
         try {
-            // Create temporary camera from snapshot
             const tempCamera = new THREE.PerspectiveCamera(
                 cameraSnapshot.fov,
                 cameraSnapshot.aspect,
@@ -420,7 +388,6 @@ function SimpleProjectionTester() {
             tempCamera.quaternion.copy(cameraSnapshot.quaternion);
             tempCamera.updateMatrixWorld();
             
-            // Configure texture
             texture.minFilter = THREE.LinearMipmapLinearFilter;
             texture.magFilter = THREE.LinearFilter;
             texture.wrapS = THREE.ClampToEdgeWrapping;
@@ -429,7 +396,6 @@ function SimpleProjectionTester() {
             texture.anisotropy = 4;
             texture.needsUpdate = true;
             
-            // Create projection material
             const projectionMaterial = new ProjectedMaterial({
                 camera: tempCamera,
                 texture: texture,
@@ -449,16 +415,13 @@ function SimpleProjectionTester() {
             
             projectionMaterialRef.current = projectionMaterial;
             
-            // Create overlay mesh
             const overlayGeometry = meshRef.current.geometry.clone();
             const overlay = new THREE.Mesh(overlayGeometry, projectionMaterial);
             overlay.name = "projection_overlay";
             
-            // Add to original mesh
             meshRef.current.add(overlay);
             projectionOverlayRef.current = overlay;
             
-            // Project the material onto the overlay mesh
             projectionMaterial.project(overlay, rendererRef.current, sceneRef.current);
             
             setProjectionApplied(true);
@@ -472,7 +435,6 @@ function SimpleProjectionTester() {
         }
     }, [cameraSnapshot]);
 
-    // Adjust projection opacity
     const handleOpacityChange = useCallback((event) => {
         const opacity = parseFloat(event.target.value);
         
@@ -485,9 +447,7 @@ function SimpleProjectionTester() {
 
     return (
         <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {/* Controls Panel */}
             <div style={{ padding: '10px', borderBottom: '1px solid #ccc', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {/* Step 1: Load Model */}
                 <div>
                     <label htmlFor="modelInput" style={{ marginRight: '5px' }}>1. Load Model:</label>
                     <input
@@ -499,7 +459,6 @@ function SimpleProjectionTester() {
                     />
                 </div>
                 
-                {/* Step 2: Unwrap UVs */}
                 <div>
                     <button
                         onClick={handleUnwrapUVs}
@@ -510,7 +469,6 @@ function SimpleProjectionTester() {
                     </button>
                 </div>
                 
-                {/* Step 3: Take Snapshot */}
                 <div>
                     <button
                         onClick={handleTakeSnapshot}
@@ -521,7 +479,6 @@ function SimpleProjectionTester() {
                     </button>
                 </div>
                 
-                {/* Step 4: Upload Texture */}
                 <div>
                     <label htmlFor="textureInput" style={{ marginRight: '5px' }}>4. Upload Texture:</label>
                     <input
@@ -533,7 +490,6 @@ function SimpleProjectionTester() {
                     />
                 </div>
                 
-                {/* Opacity Control */}
                 {projectionApplied && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <label htmlFor="opacityInput">Opacity:</label>
@@ -549,7 +505,6 @@ function SimpleProjectionTester() {
                     </div>
                 )}
                 
-                {/* Texture Size Control */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <label htmlFor="textureSizeSelect">Texture Size:</label>
                     <select
@@ -567,13 +522,11 @@ function SimpleProjectionTester() {
                 </div>
             </div>
             
-            {/* Status Display */}
             <div style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
                 <strong>Status:</strong> {status}
                 {isLoading && <span style={{ marginLeft: '10px' }}>Loading...</span>}
             </div>
             
-            {/* 3D View */}
             <div ref={mountRef} style={{ flex: 1 }}></div>
         </div>
     );

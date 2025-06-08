@@ -4,9 +4,8 @@ import ProjectedMaterialModelDemo from "@/components/retexture-components/retext
 import SimpleProjectionTester from "@/components/retexture-components/test.jsx"
 export default function DecalScene() {
     return (
-        <SimpleProjectionTester/>
-        // <ProjectedMaterialModelDemo
-        // />
+        <ProjectedMaterialModelDemo
+        />
 
     )
 }

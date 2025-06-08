@@ -11,7 +11,6 @@ export async function GET(request: Request) {
 
         const { data, error } = await supabase.auth.getUser()
         
-        // Case 1: Not logged in - create session without customer ID
         if (error || !data?.user) {
             stripeSession = await stripe.checkout.sessions.create({
                 success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
@@ -29,14 +28,12 @@ export async function GET(request: Request) {
             return NextResponse.redirect(stripeSession.url!, 303);
         }
         
-        // User is logged in, check if they have a stripe customer ID
         const { data: userData } = await supabase
             .from('purchases')
             .select('stripe_customer_id')
             .eq('user_email', data.user.email)
             .single();
 
-        // Case 2: Logged in with existing stripe customer ID
         if (userData && userData.stripe_customer_id) {
             stripeSession = await stripe.checkout.sessions.create({
                 success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
@@ -55,7 +52,6 @@ export async function GET(request: Request) {
             return NextResponse.redirect(stripeSession.url!, 303);
         }
         
-        // Case 3: Logged in but no stripe customer ID yet
         stripeSession = await stripe.checkout.sessions.create({
             success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
             cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,

@@ -1,6 +1,5 @@
 "use client"
 
-// app/settings/components/AccountSettings.tsx
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from "@/components/ui/card"
@@ -20,10 +19,8 @@ const AccountSettings = () => {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Profile Section with Enhanced Banner */}
       <Card className="border shadow-md bg-card overflow-hidden">
         <div className="relative">
-          {/* Enhanced gradient banner with pattern overlay */}
           <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 relative overflow-hidden">
             <div className="absolute inset-0 opacity-10" style={{
               backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.4\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/%3E%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/%3E%3C/g%3E%3C/svg%3E')"
@@ -41,7 +38,6 @@ const AccountSettings = () => {
                   {user?.name?.[0] || user?.email?.[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {/* Avatar edit overlay */}
               <div className="absolute inset-0 -mt-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
 
               </div>
@@ -61,7 +57,6 @@ const AccountSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Account Management */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -88,7 +83,6 @@ const AccountSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Legal and Support Information */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
@@ -119,7 +113,6 @@ const AccountSettings = () => {
         </Card>
       </div>
 
-      {/* Legal Documents */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-lg">
@@ -151,7 +144,6 @@ const AccountSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Delete Account Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

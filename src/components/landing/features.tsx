@@ -1,4 +1,3 @@
-// FeatureShowcase.jsx
 import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -22,7 +21,7 @@ const FeatureShowcase = () => {
     {
       title: "Texture Generation",
       description: "Advanced AI tools to retexture your models",
-      image: "",  // Empty string since there's no image
+      image: "",
       type: "AI",
       comingSoon: true
     }
@@ -76,14 +75,12 @@ const FeatureCard = ({ feature, index }: { feature: Feature; index: number }) =>
       onMouseLeave={() => setIsHovered(false)}
       className="relative rounded-xl overflow-hidden h-full"
     >
-      {/* Coming Soon Badge */}
       {feature.comingSoon && (
         <div className="absolute top-4 right-4 z-30 bg-primary/90 text-background px-3 py-1 rounded-full text-xs font-medium shadow-lg">
           Coming Soon
         </div>
       )}
       
-      {/* Card Background with Gradient */}
       <div className="relative z-10 h-full flex flex-col">
         <div
           className="absolute inset-0 bg-gradient-to-b from-transparent via-card/80 to-card backdrop-blur-sm border border-border/40 rounded-xl transition-all duration-300"
@@ -92,9 +89,7 @@ const FeatureCard = ({ feature, index }: { feature: Feature; index: number }) =>
           }}
         />
         
-        {/* Card Content */}
         <div className="p-6 flex flex-col h-full relative z-10">
-          {/* Header: Type Badge and Title */}
           <div className="mb-5 flex items-center">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4">
               <span className="text-primary font-semibold text-sm">{feature.type}</span>
@@ -102,10 +97,8 @@ const FeatureCard = ({ feature, index }: { feature: Feature; index: number }) =>
             <h3 className="text-2xl font-bold text-foreground">{feature.title}</h3>
           </div>
           
-          {/* Description */}
           <p className="text-muted-foreground mb-6">{feature.description}</p>
           
-          {/* Feature Image - Only shown if not coming soon */}
           {!feature.comingSoon && feature.image && (
             <div className="relative flex-grow mb-6">
               <motion.div
@@ -123,7 +116,6 @@ const FeatureCard = ({ feature, index }: { feature: Feature; index: number }) =>
             </div>
           )}
           
-          {/* Feature Detail Box - Only shown if not coming soon */}
           {!feature.comingSoon && (
             <div className="bg-secondary/20 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
               {feature.text ? (

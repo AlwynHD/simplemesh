@@ -12,19 +12,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import JSZip from "jszip";
 
-// Icons
 import {
   FileUp, FileDown, Eye, Download, Info, CheckCircle,
   AlertTriangle, Loader, Maximize, X, Globe, Square,
   Package, Box, Layers
 } from "lucide-react";
 
-// Three.js types
 import * as THREE from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-// Type definitions for dynamically loaded modules
 interface ModulesType {
   GLTFExporter?: any;
   OBJExporter?: any;
@@ -37,7 +34,6 @@ interface ModulesType {
   loaded: boolean;
 }
 
-// Format types
 type SourceFormat = "gltf" | "glb" | "obj" | "stl" | "fbx" | "";
 type TargetFormat = "gltf" | "glb" | "obj" | "stl" | "";
 
@@ -48,7 +44,6 @@ interface FormatInfo {
   icon: React.ReactNode;
 }
 
-// Interface for materials and textures
 interface ModelFiles {
   mainFile: File;
   materialFiles?: File[];
@@ -88,7 +83,6 @@ const formatInfoMap: Record<string, FormatInfo> = {
   }
 };
 
-// Compatibility matrix
 const compatibilityMatrix: Record<SourceFormat, TargetFormat[]> = {
   "gltf": ["glb", "obj", "stl"],
   "glb": ["gltf", "obj", "stl"],
@@ -99,7 +93,6 @@ const compatibilityMatrix: Record<SourceFormat, TargetFormat[]> = {
 };
 
 export default function FormatConvertPage() {
-  // Core state
   const [sourceFormat, setSourceFormat] = useState<SourceFormat>("");
   const [targetFormat, setTargetFormat] = useState<TargetFormat>("");
   const [file, setFile] = useState<File | null>(null);
@@ -108,7 +101,6 @@ export default function FormatConvertPage() {
   const [error, setError] = useState<string>("");
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
 
-  // Enhanced state
   const [activeStep, setActiveStep] = useState<number>(0);
   const [conversionProgress, setConversionProgress] = useState<number>(0);
   const [originalSize, setOriginalSize] = useState<number>(0);
@@ -120,17 +112,14 @@ export default function FormatConvertPage() {
   const [textureFilesFound, setTextureFilesFound] = useState<boolean>(false);
   const [convertedZip, setConvertedZip] = useState<Blob | null>(null);
 
-  // THREE.js objects
   const [scene, setScene] = useState<THREE.Scene | null>(null);
   const [camera, setCamera] = useState<THREE.PerspectiveCamera | null>(null);
   const [renderer, setRenderer] = useState<THREE.WebGLRenderer | null>(null);
   const [controls, setControls] = useState<OrbitControls | null>(null);
 
-  // Modules state
   const [modules, setModules] = useState<ModulesType>({ loaded: false });
   const [librariesLoading, setLibrariesLoading] = useState<boolean>(true);
 
-  // Dropzone for main file
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
       'model/gltf+json': ['.gltf'],
@@ -147,13 +136,11 @@ export default function FormatConvertPage() {
     }
   });
 
-  // Load libraries
   useEffect(() => {
     const loadLibraries = async () => {
       try {
         setLibrariesLoading(true);
 
-        // Import all modules
         const [
           { GLTFExporter },
           { OBJExporter },
@@ -174,7 +161,6 @@ export default function FormatConvertPage() {
           import('three/examples/jsm/loaders/FBXLoader.js').catch(() => ({ FBXLoader: null }))
         ]);
 
-        // Store all modules in state
         setModules({
           GLTFExporter,
           OBJExporter,
@@ -198,39 +184,31 @@ export default function FormatConvertPage() {
     loadLibraries();
   }, []);
 
-  // Canvas ref callback
   const canvasRef = useCallback((node: HTMLCanvasElement | null) => {
     if (node !== null) {
       setupThreeJs(node);
     }
   }, []);
 
-  // ThreeJS setup
   const setupThreeJs = (canvas: HTMLCanvasElement) => {
-    // Create scene
     const newScene = new THREE.Scene();
-    // Make the background transparent so it matches the card
     newScene.background = null;
 
-    // Create camera
     const newCamera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
     newCamera.position.z = 5;
 
-    // Create renderer with transparency enabled
     const newRenderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true
     });
-    newRenderer.setClearColor(0x000000, 0); // Transparent background
+    newRenderer.setClearColor(0x000000, 0);
     newRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
     newRenderer.setPixelRatio(window.devicePixelRatio);
 
-    // Create controls
     const newControls = new OrbitControls(newCamera, canvas);
     newControls.enableDamping = true;
 
-    // Add lights for better model visibility
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     newScene.add(ambientLight);
 
@@ -238,12 +216,10 @@ export default function FormatConvertPage() {
     directionalLight.position.set(1, 1, 1);
     newScene.add(directionalLight);
 
-    // Add a soft backlight for better depth
     const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
     backLight.position.set(-1, -1, -1);
     newScene.add(backLight);
 
-    // Setup animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       newControls.update();
@@ -251,31 +227,25 @@ export default function FormatConvertPage() {
     };
     animate();
 
-    // Save objects
     setScene(newScene);
     setCamera(newCamera);
     setRenderer(newRenderer);
     setControls(newControls);
 
-    // Cleanup on unmount
     return () => {
       newControls.dispose();
       newRenderer.dispose();
     };
   };
 
-  // Update model in scene
   useEffect(() => {
     if (scene && model) {
-      // Clear existing model
       scene.children = scene.children.filter(child => {
         return ['AmbientLight', 'DirectionalLight'].includes(child.type);
       });
 
-      // Add new model
       scene.add(model);
 
-      // Center camera on model
       if (camera && controls) {
         const box = new THREE.Box3().setFromObject(model);
         const center = box.getCenter(new THREE.Vector3());
@@ -295,7 +265,6 @@ export default function FormatConvertPage() {
     }
   }, [scene, model, camera, controls]);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (camera && renderer) {
@@ -324,7 +293,6 @@ export default function FormatConvertPage() {
     setMaterialFilesFound(false);
     setTextureFilesFound(false);
 
-    // Categorize files
     const mainModelFile = selectedFiles.find(file => {
       const ext = file.name.split('.').pop()?.toLowerCase();
       return ["gltf", "glb", "obj", "stl", "fbx"].includes(ext || "");
@@ -335,7 +303,6 @@ export default function FormatConvertPage() {
       return;
     }
 
-    // Get file format from extension
     const extension = mainModelFile.name.split('.').pop()?.toLowerCase() as SourceFormat;
     if (!["gltf", "glb", "obj", "stl", "fbx"].includes(extension)) {
       setError("Unsupported file format. Please upload a GLTF, GLB, OBJ, STL, or FBX file.");
@@ -346,12 +313,10 @@ export default function FormatConvertPage() {
     setOriginalSize(mainModelFile.size);
     setSourceFormat(extension);
 
-    // Set default target format based on compatibility
     if (compatibilityMatrix[extension].length > 0) {
       setTargetFormat(compatibilityMatrix[extension][0]);
     }
 
-    // Find material and texture files
     const materialFiles = selectedFiles.filter(file => file.name.toLowerCase().endsWith('.mtl'));
     const textureFiles = selectedFiles.filter(file => {
       const ext = file.name.split('.').pop()?.toLowerCase();
@@ -361,14 +326,12 @@ export default function FormatConvertPage() {
     setMaterialFilesFound(materialFiles.length > 0);
     setTextureFilesFound(textureFiles.length > 0);
 
-    // Set model files
     setModelFiles({
       mainFile: mainModelFile,
       materialFiles: materialFiles.length > 0 ? materialFiles : undefined,
       textureFiles: textureFiles.length > 0 ? textureFiles : undefined
     });
 
-    // Load the model
     loadModelWithMaterials({
       mainFile: mainModelFile,
       materialFiles: materialFiles.length > 0 ? materialFiles : undefined,
@@ -435,11 +398,9 @@ export default function FormatConvertPage() {
               break;
             }
             case 'obj': {
-              // For OBJ files with materials
               if (files.materialFiles && files.materialFiles.length > 0 && modules.MTLLoader) {
                 const objText = new TextDecoder().decode(new Uint8Array(arrayBuffer));
                 
-                // First load the material file
                 const mtlReader = new FileReader();
                 mtlReader.onload = async (mtlEvent: ProgressEvent<FileReader>) => {
                   const mtlText = mtlEvent.target?.result as string;
@@ -449,28 +410,21 @@ export default function FormatConvertPage() {
                   }
  
                   try {
-                    // Create material loader
                     const mtlLoader = new modules.MTLLoader();
-                    // Set the material file path so textures can be located (dummy path)
                     mtlLoader.setResourcePath('textures/');
                     
-                    // Parse material content
                     const materials = mtlLoader.parse(mtlText);
                     materials.preload();
  
-                    // Create URL sources for textures if available
                     if (files.textureFiles && files.textureFiles.length > 0) {
                       const textureURLs: Record<string, string> = {};
                       
-                      // Create object URLs for each texture
                       for (const textureFile of files.textureFiles) {
                         textureURLs[textureFile.name] = URL.createObjectURL(textureFile);
                       }
  
-                      // Replace texture loader to use our blob URLs
                       const originalLoad = materials.loadTexture;
                       materials.loadTexture = function(url: string, mapping: any, onLoad: any, onError: any) {
-                        // Extract texture filename from url
                         const filename = url.split('/').pop();
                         if (filename && textureURLs[filename]) {
                           return originalLoad.call(this, textureURLs[filename], mapping, onLoad, onError);
@@ -479,15 +433,12 @@ export default function FormatConvertPage() {
                       };
                     }
  
-                    // Create and configure object loader with materials
                     const objLoader = new modules.OBJLoader();
                     objLoader.setMaterials(materials);
                     
-                    // Parse OBJ content
                     const objModel = objLoader.parse(objText);
                     resolve(objModel);
                   } catch (mtlError) {
-                    // If material loading fails, fall back to geometry-only loading
                     console.warn("Failed to load materials, loading geometry only:", mtlError);
                     const objLoader = new modules.OBJLoader();
                     const objModel = objLoader.parse(objText);
@@ -501,7 +452,6 @@ export default function FormatConvertPage() {
                 
                 mtlReader.readAsText(files.materialFiles[0]);
               } else {
-                // Basic OBJ loading without materials
                 const loader = new modules.OBJLoader();
                 const objText = new TextDecoder().decode(new Uint8Array(arrayBuffer));
                 const objModel = loader.parse(objText);
@@ -512,9 +462,8 @@ export default function FormatConvertPage() {
             case 'stl': {
               const loader = new modules.STLLoader();
               const geometry = loader.parse(arrayBuffer);
-              // Create a more appealing material for STL preview
               const material = new THREE.MeshStandardMaterial({
-                color: 0xd97706, // Using a color that matches our primary amber tone
+                color: 0xd97706,
                 metalness: 0.3,
                 roughness: 0.6,
               });
@@ -568,7 +517,6 @@ export default function FormatConvertPage() {
     try {
       updateProgress(10);
  
-      // Load the model if not already loaded
       const modelToConvert = model || await loadModel(modelFiles || { mainFile: file }, sourceFormat);
       if (!modelToConvert) {
         throw new Error("Failed to load model");
@@ -582,7 +530,6 @@ export default function FormatConvertPage() {
       let materialData: string | null = null;
       let textureFiles: { name: string, data: Blob }[] = [];
  
-      // Convert to target format
       switch (targetFormat) {
         case 'gltf':
         case 'glb': {
@@ -618,10 +565,7 @@ export default function FormatConvertPage() {
           updateProgress(40);
           const objExporter = new modules.OBJExporter();
           
-          // Extract materials if they exist in the model
           if (includeObjMaterials) {
-            // Generate MTL content (simplified example - in a real app would need more complex material extraction)
-            // This is a placeholder for material extraction logic
             const extractMaterials = (object: THREE.Object3D) => {
               const materials: THREE.Material[] = [];
               object.traverse((child) => {
@@ -634,7 +578,6 @@ export default function FormatConvertPage() {
                 }
               });
               
-              // Generate simple MTL content (would be more complex in real implementation)
               let mtlContent = "# Material file generated by 3D Model Converter\n\n";
               
               materials.forEach((material, index) => {
@@ -644,31 +587,25 @@ export default function FormatConvertPage() {
                   mtlContent += `Ns 225.000000\n`;
                   mtlContent += `Ka 1.000000 1.000000 1.000000\n`;
                   
-                  // Get color
                   const color = material.color;
                   mtlContent += `Kd ${color.r} ${color.g} ${color.b}\n`;
                   
-                  // Metalness and roughness approximation
                   mtlContent += `Ks ${material.metalness} ${material.metalness} ${material.metalness}\n`;
                   mtlContent += `Ke 0.000000 0.000000 0.000000\n`;
                   mtlContent += `Ni 1.450000\n`;
                   mtlContent += `d 1.000000\n`;
                   mtlContent += `illum 2\n\n`;
                   
-                  // Extract textures if available
                   if (material.map) {
                     const textureName = `texture_${index}.png`;
                     mtlContent += `map_Kd ${textureName}\n\n`;
                     
-                    // In a real implementation, we would need to extract the texture data
-                    // This is simplified and would require actual texture extraction
                     const canvas = document.createElement('canvas');
                     canvas.width = 1024;
                     canvas.height = 1024;
                     const ctx = canvas.getContext('2d');
                     
                     if (ctx) {
-                      // Simplified - in reality would need to render the texture properly
                       ctx.fillStyle = `rgb(${color.r * 255}, ${color.g * 255}, ${color.b * 255})`;
                       ctx.fillRect(0, 0, canvas.width, canvas.height);
                       
@@ -688,36 +625,28 @@ export default function FormatConvertPage() {
               return mtlContent;
             };
             
-            // Extract materials from the model
             materialData = extractMaterials(modelToConvert);
           }
           
           updateProgress(60);
           
-          // Parse to OBJ format
           result = objExporter.parse(modelToConvert);
           updateProgress(80);
           
-          // Create the output blob
           blob = new Blob([result as string], { type: 'text/plain' });
           
-          // If we have materials and the user wants them, package everything into a ZIP
           if (includeObjMaterials && materialData) {
             const zip = new JSZip();
             const baseName = file.name.split('.')[0];
             
-            // Add OBJ file
             zip.file(`${baseName}.obj`, blob);
             
-            // Add MTL file
             zip.file(`${baseName}.mtl`, materialData);
             
-            // Add any textures
             textureFiles.forEach(texture => {
               zip.file(texture.name, texture.data);
             });
             
-            // Generate ZIP blob
             const zipBlob = await zip.generateAsync({ type: 'blob' });
             setConvertedZip(zipBlob);
           }
@@ -740,11 +669,9 @@ export default function FormatConvertPage() {
  
       updateProgress(90);
  
-      // Save converted blob
       setConvertedBlob(blob);
       setConvertedSize(blob.size);
  
-      // Update UI state
       setActiveStep(2);
       updateProgress(100);
  
@@ -759,7 +686,6 @@ export default function FormatConvertPage() {
   const downloadConvertedFile = () => {
     if ((!convertedBlob && !convertedZip) || !file || !targetFormat) return;
  
-    // Determine what to download
     const blobToDownload = targetFormat === 'obj' && includeObjMaterials && convertedZip 
       ? convertedZip 
       : convertedBlob;
@@ -770,7 +696,6 @@ export default function FormatConvertPage() {
     const link = document.createElement('a');
     link.href = url;
     
-    // Set appropriate filename
     const baseName = file.name.split('.')[0];
     link.download = targetFormat === 'obj' && includeObjMaterials && convertedZip
       ? `${baseName}.zip`
@@ -804,7 +729,6 @@ export default function FormatConvertPage() {
     setMaterialFilesFound(false);
     setTextureFilesFound(false);
  
-    // Reset scene
     if (scene) {
       scene.children = scene.children.filter(child => {
         return ['AmbientLight', 'DirectionalLight'].includes(child.type);
@@ -812,7 +736,6 @@ export default function FormatConvertPage() {
     }
   };
  
-  // Render the compatibility matrix
   const renderCompatibilityMatrix = () => {
     return (
       <div className="p-4 bg-secondary/50 rounded-lg mt-4 border border-border shadow-sm">
@@ -854,7 +777,6 @@ export default function FormatConvertPage() {
       </div>
  
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Left column - Upload & Convert */}
         <div className="space-y-6">
           <Card className="shadow-md border-border overflow-hidden">
             <CardHeader className="bg-secondary/30 border-b border-border">
@@ -991,7 +913,6 @@ export default function FormatConvertPage() {
                           </SelectContent>
                         </Select>
  
-                        {/* OBJ Material options */}
                         {targetFormat === 'obj' && (
                           <div className="flex items-center space-x-2 mt-3">
                             <Checkbox 
@@ -1158,7 +1079,6 @@ export default function FormatConvertPage() {
          )}
        </div>
 
-       {/* Right column - Preview */}
        <div>
          <Card className="h-full flex flex-col shadow-md border-border">
            <CardHeader className="pb-3 bg-secondary/30 border-b border-border">

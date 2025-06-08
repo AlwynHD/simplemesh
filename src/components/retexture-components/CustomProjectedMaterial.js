@@ -2,7 +2,6 @@ import * as THREE from 'three'
 import { monkeyPatch, addLoadListener } from './three-utils'
 
 export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
-  // internal values... they are exposed via getters
   #camera
   #cover
   #textureScale
@@ -111,12 +110,10 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
 
     Object.defineProperty(this, 'isProjectedMaterial', { value: true })
 
-    // save the private variables
     this.#camera = camera
     this.#cover = cover
     this.#textureScale = textureScale
 
-    // scale to keep the image proportions and apply textureScale
     const [widthScaled, heightScaled] = computeScaledDimensions(
       texture,
       camera,
@@ -126,20 +123,13 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
 
     this.uniforms = {
       projectedTexture: { value: texture },
-      // this avoids rendering black if the texture
-      // hasn't loaded yet
       isTextureLoaded: { value: Boolean(texture.image) },
-      // don't show the texture if we haven't called project()
       isTextureProjected: { value: false },
-      // if we have multiple materials we want to show the
-      // background only of the first material
       backgroundOpacity: { value: backgroundOpacity },
-      // these will be set on project()
       viewMatrixCamera: { value: new THREE.Matrix4() },
       projectionMatrixCamera: { value: new THREE.Matrix4() },
       projPosition: { value: new THREE.Vector3() },
       projDirection: { value: new THREE.Vector3(0, 0, -1) },
-      // we will set this later when we will have positioned the object
       savedModelMatrix: { value: new THREE.Matrix4() },
       widthScaled: { value: widthScaled },
       heightScaled: { value: heightScaled },
@@ -147,7 +137,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
     }
 
     this.onBeforeCompile = (shader) => {
-      // expose also the material's uniforms
       Object.assign(this.uniforms, shader.uniforms)
       shader.uniforms = this.uniforms
 
@@ -156,7 +145,7 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       }
 
       shader.vertexShader = monkeyPatch(shader.vertexShader, {
-        header: /* glsl */ `
+        header: `
           uniform mat4 viewMatrixCamera;
           uniform mat4 projectionMatrixCamera;
 
@@ -175,7 +164,7 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
           varying vec4 vWorldPosition;
           #endif
         `,
-        main: /* glsl */ `
+        main: `
           #ifdef USE_INSTANCING
           mat4 savedModelMatrix = mat4(
             savedModelMatrix0,
@@ -194,7 +183,7 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       })
 
       shader.fragmentShader = monkeyPatch(shader.fragmentShader, {
-        header: /* glsl */ `
+        header: `
           uniform sampler2D projectedTexture;
           uniform bool isTextureLoaded;
           uniform bool isTextureProjected;
@@ -215,7 +204,7 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
             return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
           }
         `,
-        'vec4 diffuseColor = vec4( diffuse, opacity );': /* glsl */ `
+        'vec4 diffuseColor = vec4( diffuse, opacity );': `
           // clamp the w to make sure we don't project behind
           float w = max(vTexCoords.w, 0.0);
 
@@ -255,15 +244,8 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       })
     }
 
-    // Listen on resize if the camera used for the projection
-    // is the same used to render.
-    // We do this on window resize because there is no way to
-    // listen for the resize of the renderer
     window.addEventListener('resize', this.#saveCameraProjectionMatrix)
 
-    // If the image texture passed hasn't loaded yet,
-    // wait for it to load and compute the correct proportions.
-    // This avoids rendering black while the texture is loading
     addLoadListener(texture, () => {
       this.uniforms.isTextureLoaded.value = true
       this.dispatchEvent({ type: 'textureload' })
@@ -291,13 +273,10 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
   }
 
   #saveCameraMatrices() {
-    // make sure the camera matrices are updated
     this.camera.updateProjectionMatrix()
     this.camera.updateMatrixWorld()
     this.camera.updateWorldMatrix()
 
-    // update the uniforms from the camera so they're
-    // fixed in the camera's position at the projection time
     const viewMatrixCamera = this.camera.matrixWorldInverse
     const projectionMatrixCamera = this.camera.projectionMatrix
     const modelMatrixCamera = this.camera.matrixWorld
@@ -307,7 +286,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
     this.uniforms.projPosition.value.setFromMatrixPosition(modelMatrixCamera)
     this.uniforms.projDirection.value.set(0, 0, 1).applyMatrix4(modelMatrixCamera)
 
-    // tell the shader we've projected
     this.uniforms.isTextureProjected.value = true
   }
 
@@ -330,14 +308,10 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       )
     }
 
-    // make sure the matrix is updated
     mesh.updateWorldMatrix(true, false)
 
-    // we save the object model matrix so it's projected relative
-    // to that position, like a snapshot
     this.uniforms.savedModelMatrix.value.copy(mesh.matrixWorld)
 
-    // if the material is not the first, output just the texture
     if (Array.isArray(mesh.material)) {
       const materialIndex = mesh.material.indexOf(this)
       if (!mesh.material[materialIndex].transparent) {
@@ -350,7 +324,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       }
     }
 
-    // persist also the current camera position and matrices
     this.#saveCameraMatrices()
   }
 
@@ -417,7 +390,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       matrixWorld.elements[15]
     )
 
-    // if the material is not the first, output just the texture
     if (Array.isArray(instancedMesh.material)) {
       const materialIndex = instancedMesh.material.indexOf(this)
       if (!instancedMesh.material[materialIndex].transparent) {
@@ -430,9 +402,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
       }
     }
 
-    // persist the current camera position and matrices
-    // only if it's the first instance since most surely
-    // in all other instances the camera won't change
     if (index === 0 || forceCameraSave) {
       this.#saveCameraMatrices()
     }
@@ -456,7 +425,6 @@ export default class ProjectedMaterial extends THREE.MeshPhysicalMaterial {
   }
 }
 
-// get camera ratio from different types of cameras
 function getCameraRatio(camera) {
   switch (camera.type) {
     case 'PerspectiveCamera': {
@@ -473,14 +441,11 @@ function getCameraRatio(camera) {
   }
 }
 
-// scale to keep the image proportions and apply textureScale
 function computeScaledDimensions(texture, camera, textureScale, cover) {
-  // return some default values if the image hasn't loaded yet
   if (!texture.image) {
     return [1, 1]
   }
 
-  // return if it's a video and if the video hasn't loaded yet
   if (texture.image.videoWidth === 0 && texture.image.videoHeight === 0) {
     return [1, 1]
   }

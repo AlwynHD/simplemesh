@@ -22,7 +22,6 @@ interface ComparisonTableProps {
 }
 
 const ComparisonTable: React.FC<ComparisonTableProps> = ({ handlePurchase }) => {
-  // General comparison points
   const generalComparison = [
     { 
       label: "Pricing Model", 
@@ -59,13 +58,11 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ handlePurchase }) => 
     }
   ];
 
-  // Feature comparison
   const featuresList: CompetitorFeature[] = [
     { name: "Image to 3D", simpleMesh: true, meshy: true, aiStudio: true },
     { name: "Text to 3D", simpleMesh: true, meshy: true, aiStudio: true },
     { name: "HD Export Quality", simpleMesh: true, meshy: true, aiStudio: true },
     { name: "Multiple Export Formats", simpleMesh: false, meshy: true, aiStudio: true },
-    // Features your competitors have that you don't
     { name: "Texture Editing", simpleMesh: false, meshy: true, aiStudio: true },
     { name: "Animation Tools", simpleMesh: false, meshy: true, aiStudio: true },
     { name: "API Access", simpleMesh: false, meshy: true, aiStudio: true }
@@ -104,7 +101,6 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ handlePurchase }) => 
           </p>
         </div>
         
-        {/* Table version (both desktop and mobile) */}
         <div className="overflow-auto">
           <div className="min-w-[800px] overflow-hidden rounded-xl border border-border shadow-md mb-8">
             <div className="grid grid-cols-4 bg-secondary/5">
@@ -179,7 +175,6 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({ handlePurchase }) => 
           </div>
         </div>
         
-        {/* Features Table */}
         <div className="overflow-auto">
           <div className="min-w-[800px] overflow-hidden rounded-xl border border-border shadow-md">
             <div className="grid grid-cols-4 bg-secondary/5">

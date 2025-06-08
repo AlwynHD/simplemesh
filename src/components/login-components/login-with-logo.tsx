@@ -40,7 +40,6 @@ export function LoginWithLogo() {
     try {
       await verifyotp(formData)
       setError('')
-      // Handle successful verification (e.g., redirect to dashboard)
     } catch (err) {
       setError('Invalid OTP. Please try again.' + err)
     } finally {

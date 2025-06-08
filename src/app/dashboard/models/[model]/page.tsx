@@ -33,6 +33,7 @@ export default function ModelPage() {
           setError(result.error);
           setModel(null);
         } else if (result.model) {
+          
           setModel(result.model);
           setError(null);
         } else {
